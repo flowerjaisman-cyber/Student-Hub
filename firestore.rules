@@ -1,0 +1,203 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection test document
+    match /test/connection {
+      allow read: if true;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Isolated user-space: users/{uid}/...
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+
+      // User Profile subcollection
+      match /profile/{profileId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) 
+          && isValidId(profileId) 
+          && incoming().uid == uid 
+          && incoming().email is string 
+          && incoming().email.size() <= 150;
+        allow update: if isOwner(uid) 
+          && isValidId(profileId) 
+          && incoming().uid == uid 
+          && incoming().uid == existing().uid;
+        allow delete: if false;
+      }
+
+      // User Settings subcollection
+      match /settings/{settingsId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) 
+          && isValidId(settingsId)
+          && incoming().appearance in ['system', 'light', 'dark'];
+        allow delete: if false;
+      }
+
+      // User Documents subcollection
+      match /documents/{docId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(docId);
+      }
+
+      // User Notes subcollection
+      match /notes/{noteId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(noteId);
+      }
+
+      // User Files subcollection
+      match /files/{fileId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(fileId);
+      }
+
+      // User Folders subcollection (Phase 9)
+      match /folders/{folderId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(folderId);
+      }
+
+      // User Calculators & Countdowns subcollection
+      match /calculators/{itemId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(itemId);
+      }
+
+      // Phase 8: Study Tasks subcollection
+      match /studyTasks/{taskId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(taskId);
+      }
+
+      // Phase 8: Assignments subcollection
+      match /assignments/{assignmentId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(assignmentId);
+      }
+
+      // Phase 8: Exams & Deadlines subcollection
+      match /exams/{examId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(examId);
+      }
+
+      // Phase 8: Timetable subcollection
+      match /timetable/{entryId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(entryId);
+      }
+
+      // Phase 8: Study Sessions subcollection
+      match /studySessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(sessionId);
+      }
+
+      // Phase 8: Study Goals subcollection
+      match /studyGoals/{goalId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(goalId);
+      }
+
+      // Phase 8: Study Habits subcollection
+      match /studyHabits/{habitId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(habitId);
+      }
+
+      // Phase 8: Habit Checks subcollection
+      match /habitChecks/{checkId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(checkId);
+      }
+
+      // Phase 8: Subjects subcollection
+      match /subjects/{subjectId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(subjectId);
+      }
+
+      // Phase 8: Pomodoro Sessions subcollection
+      match /pomodoroSessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(sessionId);
+      }
+
+      // Phase 11: AI Study Materials subcollection
+      match /ai_study_materials/{materialId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(materialId);
+      }
+
+      // Phase 11: AI Chat History & Sessions subcollection
+      match /ai_sessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(sessionId);
+      }
+
+      // Phase 12: Academic Periods subcollection
+      match /academicPeriods/{periodId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(periodId);
+      }
+
+      // Phase 12: Academic Assessment Results & Gradebook subcollection
+      match /results/{resultId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(resultId);
+      }
+
+      // Phase 12: Saved Academic Progress Reports subcollection
+      match /progressReports/{reportId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(reportId);
+      }
+
+      // Phase 13: Attendance Records subcollection
+      match /attendance/{attendanceId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(attendanceId);
+      }
+
+      // Phase 13: Attendance Settings subcollection
+      match /attendanceSettings/{settingsId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid) && isValidId(settingsId);
+      }
+
+      // User Activity subcollection
+      match /activity/{actId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidId(actId);
+        allow update, delete: if false;
+      }
+    }
+  }
+}

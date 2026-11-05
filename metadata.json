@@ -1,0 +1,6 @@
+{
+  "name": "StudentHub",
+  "description": "Everything a Student Needs — In One Place. All-in-one utility workspace for students featuring My Files Cloud Storage, Study Planner & Productivity, Calculators & Converters, Writing & Academic Tools, Document Studio, Image utilities, and secure Firestore cloud persistence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
