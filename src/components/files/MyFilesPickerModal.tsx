@@ -88,7 +88,7 @@ export function MyFilesPickerModal({
   }
 
   const handleConfirmSelect = async () => {
-    if (!selectedFile) return;
+    if (!user || !selectedFile) return;
 
     setLoadingFile(true);
     setError(null);
