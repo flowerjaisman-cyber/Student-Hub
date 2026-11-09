@@ -57,50 +57,58 @@ class LocalDatabase {
     return this.dbPromise;
   }
 
-  public async saveBlob(fileId: string, blob: Blob): Promise<void> {
+  // Binary blobs are namespaced by Auth UID. The IndexedDB object-store key is
+  // never a bare file ID, so switching accounts cannot reveal another user's files.
+  private getBlobKey(uid: string, fileId: string): string {
+    return `${uid}:${fileId}`;
+  }
+
+  public async saveBlob(uid: string, fileId: string, blob: Blob): Promise<void> {
     const db = await this.initIndexedDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(['files'], 'readwrite');
       const store = transaction.objectStore('files');
-      const req = store.put({ id: fileId, blob, updatedAt: Date.now() });
+      const req = store.put({
+        id: this.getBlobKey(uid, fileId),
+        uid,
+        fileId,
+        blob,
+        updatedAt: Date.now(),
+      });
 
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
   }
 
-  public async getBlob(fileId: string): Promise<Blob | null> {
+  public async getBlob(uid: string, fileId: string): Promise<Blob | null> {
     const db = await this.initIndexedDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(['files'], 'readonly');
       const store = transaction.objectStore('files');
-      const req = store.get(fileId);
+      const req = store.get(this.getBlobKey(uid, fileId));
 
       req.onsuccess = () => {
         const result = req.result;
-        if (result && result.blob) {
-          resolve(result.blob);
-        } else {
-          resolve(null);
-        }
+        resolve(result?.blob || null);
       };
       req.onerror = () => reject(req.error);
     });
   }
 
-  public async deleteBlob(fileId: string): Promise<void> {
+  public async deleteBlob(uid: string, fileId: string): Promise<void> {
     try {
       const db = await this.initIndexedDB();
       return new Promise((resolve, reject) => {
         const transaction = db.transaction(['files'], 'readwrite');
         const store = transaction.objectStore('files');
-        const req = store.delete(fileId);
+        const req = store.delete(this.getBlobKey(uid, fileId));
 
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
       });
     } catch (err) {
-      console.warn('Could not delete blob from IndexedDB:', err);
+      console.warn('Could not delete user-scoped blob from IndexedDB:', err);
     }
   }
 
