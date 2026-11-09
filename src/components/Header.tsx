@@ -188,7 +188,7 @@ export function Header({
                 {/* Local Workspace info */}
                 <div className="mt-3 p-2 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 text-[11px] flex items-center justify-between text-emerald-800 dark:text-emerald-300">
                   <span className="font-medium">
-                    Status: <span className="font-semibold">Free &amp; Unrestricted</span>
+                    Status: <span className="font-semibold">Signed in with Google</span>
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/80 font-bold">
                     Active
@@ -207,6 +207,21 @@ export function Header({
                 >
                   <SettingsIcon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   <span>Preferences &amp; Settings</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setMenuOpen(false);
+                    try {
+                      await signOut();
+                    } catch (error) {
+                      console.error('Could not sign out:', error);
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign out</span>
                 </button>
               </div>
             </div>
