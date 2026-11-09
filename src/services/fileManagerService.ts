@@ -94,7 +94,7 @@ export function uploadUserFile(
       }
 
       // Save blob into IndexedDB
-      await localDb.saveBlob(fileId, file);
+      await localDb.saveBlob(uid, fileId, file);
 
       options.onProgress?.(80, Math.floor(size * 0.8), size);
       options.onStatusChange?.('saving');
@@ -134,8 +134,8 @@ export function uploadUserFile(
 /**
  * Retrieve blob for a UserFile from local database
  */
-export async function getFileBlob(file: UserFile): Promise<Blob> {
-  const blob = await localDb.getBlob(file.id);
+export async function getFileBlob(uid: string, file: UserFile): Promise<Blob> {
+  const blob = await localDb.getBlob(uid, file.id);
   if (blob) return blob;
 
   if (file.downloadUrl) {
@@ -401,7 +401,7 @@ export async function restoreFolder(
  * Permanently delete a file
  */
 export async function permanentDeleteFile(uid: string, file: UserFile): Promise<void> {
-  await localDb.deleteBlob(file.id);
+  await localDb.deleteBlob(uid, file.id);
   localDb.deleteItem('files', uid, file.id);
 }
 
@@ -445,7 +445,7 @@ export async function duplicateUserFile(
   file: UserFile,
   existingFilenames: string[]
 ): Promise<UserFile> {
-  const blob = await getFileBlob(file);
+  const blob = await getFileBlob(uid, file);
 
   const lastDot = file.name.lastIndexOf('.');
   const ext = lastDot > 0 ? file.name.substring(lastDot) : '';
@@ -454,7 +454,7 @@ export async function duplicateUserFile(
   const finalFilename = resolveDuplicateName(existingFilenames, desiredCopyName);
 
   const newFileId = generateSafeId('file');
-  await localDb.saveBlob(newFileId, blob);
+  await localDb.saveBlob(uid, newFileId, blob);
 
   const nowIso = new Date().toISOString();
   const newFileRecord: UserFile = {
@@ -554,7 +554,7 @@ export async function batchMove(
 /**
  * Download a single file securely via browser
  */
-export async function downloadFile(file: UserFile): Promise<void> {
+export async function downloadFile(uid: string, file: UserFile): Promise<void> {
   let blobUrl: string | null = null;
   try {
     const blob = await getFileBlob(file);
@@ -576,6 +576,7 @@ export async function downloadFile(file: UserFile): Promise<void> {
  * Download multiple files as a single ZIP archive
  */
 export async function batchDownloadAsZip(
+  uid: string,
   files: UserFile[],
   onProgress?: (current: number, total: number, filename: string) => void
 ): Promise<void> {
