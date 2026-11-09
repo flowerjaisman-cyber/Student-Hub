@@ -93,7 +93,7 @@ export function MyFilesPickerModal({
     setLoadingFile(true);
     setError(null);
     try {
-      const blob = await getFileBlob(selectedFile);
+      const blob = await getFileBlob(user.uid, selectedFile);
       onSelectFile(selectedFile, blob);
       onClose();
     } catch (err: any) {
