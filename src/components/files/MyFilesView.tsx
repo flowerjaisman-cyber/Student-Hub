@@ -559,6 +559,7 @@ export function MyFilesView({
 
   // Download File & Batch Zip Download
   const handleDownloadFile = async (file: UserFile) => {
+    if (!user) return;
     try {
       await downloadFile(user.uid, file);
     } catch (err: any) {
@@ -567,6 +568,7 @@ export function MyFilesView({
   };
 
   const handleBatchZipDownload = async () => {
+    if (!user) return;
     const selectedFiles = files.filter((f) => selectedFileIds.has(f.id));
     if (selectedFiles.length === 0) return;
     try {
