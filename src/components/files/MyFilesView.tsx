@@ -560,7 +560,7 @@ export function MyFilesView({
   // Download File & Batch Zip Download
   const handleDownloadFile = async (file: UserFile) => {
     try {
-      await downloadFile(file);
+      await downloadFile(user.uid, file);
     } catch (err: any) {
       setErrorBanner(err.message || 'Download failed');
     }
@@ -570,7 +570,7 @@ export function MyFilesView({
     const selectedFiles = files.filter((f) => selectedFileIds.has(f.id));
     if (selectedFiles.length === 0) return;
     try {
-      await batchDownloadAsZip(selectedFiles);
+      await batchDownloadAsZip(user.uid, selectedFiles);
     } catch (err: any) {
       setErrorBanner(err.message || 'Failed to generate ZIP download');
     }
