@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { LoadingScreen } from './components/LoadingScreen.tsx';
+import { GoogleSignInView } from './components/GoogleSignInView.tsx';
 import { Header } from './components/Header.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 import { DashboardView } from './components/DashboardView.tsx';
@@ -150,7 +151,12 @@ function MainAppShell() {
     return <LoadingScreen />;
   }
 
-  const activeUserId = user?.uid || 'student_user';
+  // All app routes are protected: no app shell or user data renders without a verified Supabase session.
+  if (!user) {
+    return <GoogleSignInView />;
+  }
+
+  const activeUserId = user.uid;
   const isCompact = settings?.compactView || false;
 
   return (
