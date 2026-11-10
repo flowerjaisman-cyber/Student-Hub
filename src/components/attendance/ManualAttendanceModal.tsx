@@ -5,6 +5,8 @@ import {
   AttendanceStatus,
 } from '../../types/attendance.ts';
 import { StudySubject } from '../../types/index.ts';
+import { saveSubject } from '../../services/studyService.ts';
+import { saveAcademicPeriod } from '../../services/progressService.ts';
 import { AcademicPeriod } from '../../types/progress.ts';
 import {
   saveAttendanceRecord,
@@ -48,6 +50,13 @@ export function ManualAttendanceModal({
   const [isMakeup, setIsMakeup] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [newSubjectCode, setNewSubjectCode] = useState('');
+  const [isAddingPeriod, setIsAddingPeriod] = useState(false);
+  const [newPeriodName, setNewPeriodName] = useState('');
+  const [newPeriodStart, setNewPeriodStart] = useState(defaultDate || new Date().toISOString().split('T')[0]);
+  const [newPeriodEnd, setNewPeriodEnd] = useState('');
 
   useEffect(() => {
     if (existingRecord) {
@@ -61,7 +70,7 @@ export function ManualAttendanceModal({
       setNotes(existingRecord.notes || '');
       setIsMakeup(existingRecord.isMakeup || false);
     } else {
-      setSubjectId(defaultSubjectId || (subjects.length > 0 ? subjects[0].id : ''));
+      setSubjectId(defaultSubjectId || (subjects.length > 0 ? subjects[0].id : 'custom'));
       setCustomSubjectName(subjects.length > 0 ? subjects[0].name : '');
       const activePeriod = periods.find((p) => p.isActive);
       setPeriodId(activePeriod ? activePeriod.id : '');
@@ -73,7 +82,21 @@ export function ManualAttendanceModal({
       setIsMakeup(false);
     }
     setError(null);
-  }, [existingRecord, isOpen, defaultDate, defaultSubjectId, subjects, periods]);
+  }, [existingRecord, isOpen, defaultDate, defaultSubjectId]);
+
+  // Subscriptions may load after the modal opens. Apply defaults without resetting
+  // anything the user has already entered.
+  useEffect(() => {
+    if (!isOpen || existingRecord) return;
+    if (!subjectId && subjects.length > 0) {
+      setSubjectId(defaultSubjectId || subjects[0].id);
+      setCustomSubjectName(subjects.find((s) => s.id === (defaultSubjectId || subjects[0].id))?.name || '');
+    }
+    if (!periodId) {
+      const activePeriod = periods.find((p) => p.isActive);
+      if (activePeriod) setPeriodId(activePeriod.id);
+    }
+  }, [isOpen, existingRecord, subjectId, periodId, subjects, periods, defaultSubjectId]);
 
   if (!isOpen) return null;
 
@@ -93,6 +116,78 @@ export function ManualAttendanceModal({
           startTime || undefined
         )
       : undefined;
+
+  const handleAddSubject = async () => {
+    const name = newSubjectName.trim();
+    if (!name) {
+      setError('Please enter a subject name.');
+      return;
+    }
+    if (subjects.some((s) => s.name.trim().toLowerCase() === name.toLowerCase())) {
+      setError('This subject already exists. Select it from the list.');
+      return;
+    }
+    setIsSaving(true);
+    setError(null);
+    try {
+      const now = new Date().toISOString();
+      const subject: StudySubject = {
+        id: `sub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name,
+        code: newSubjectCode.trim() || undefined,
+        color: '#6366f1',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await saveSubject(userId, subject);
+      setSubjectId(subject.id);
+      setCustomSubjectName(subject.name);
+      setNewSubjectName('');
+      setNewSubjectCode('');
+      setIsAddingSubject(false);
+    } catch (err: any) {
+      setError(err?.message || 'Could not add subject.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddPeriod = async () => {
+    const name = newPeriodName.trim();
+    if (!name || !newPeriodStart || !newPeriodEnd) {
+      setError('Please enter the period name, start date and end date.');
+      return;
+    }
+    if (newPeriodEnd < newPeriodStart) {
+      setError('Period end date must be on or after its start date.');
+      return;
+    }
+    setIsSaving(true);
+    setError(null);
+    try {
+      const now = new Date().toISOString();
+      const period: AcademicPeriod = {
+        id: `period_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        userId,
+        name,
+        startDate: newPeriodStart,
+        endDate: newPeriodEnd,
+        isActive: periods.length === 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await saveAcademicPeriod(userId, period);
+      setPeriodId(period.id);
+      setNewPeriodName('');
+      setNewPeriodEnd('');
+      setIsAddingPeriod(false);
+    } catch (err: any) {
+      setError(err?.message || 'Could not add academic period.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,6 +312,7 @@ export function ManualAttendanceModal({
                 }}
                 className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none"
               >
+                <option value="">Choose a subject</option>
                 {subjects.map((sub) => (
                   <option key={sub.id} value={sub.id}>
                     {sub.name} {sub.code ? `(${sub.code})` : ''}
@@ -234,6 +330,16 @@ export function ManualAttendanceModal({
                   className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                   required
                 />
+              )}
+              <button type="button" onClick={() => { setIsAddingSubject((v) => !v); setError(null); }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                {isAddingSubject ? 'Cancel adding subject' : '+ Add a new subject'}
+              </button>
+              {isAddingSubject && (
+                <div className="rounded-xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/20 p-3 space-y-2">
+                  <input type="text" value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder="Subject name (required)" className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                  <input type="text" value={newSubjectCode} onChange={(e) => setNewSubjectCode(e.target.value)} placeholder="Subject code (optional)" className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                  <button type="button" disabled={isSaving} onClick={handleAddSubject} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50">Save subject</button>
+                </div>
               )}
             </div>
           </div>
@@ -269,6 +375,19 @@ export function ManualAttendanceModal({
                   </option>
                 ))}
               </select>
+              <button type="button" onClick={() => { setIsAddingPeriod((v) => !v); setError(null); }} className="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                {isAddingPeriod ? 'Cancel adding period' : '+ Add a new academic period'}
+              </button>
+              {isAddingPeriod && (
+                <div className="mt-2 rounded-xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/20 p-3 space-y-2">
+                  <input type="text" value={newPeriodName} onChange={(e) => setNewPeriodName(e.target.value)} placeholder="Period name (e.g. Fall Semester 2026)" className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><label className="block text-[11px] mb-1 text-slate-600 dark:text-slate-300">Start date</label><input type="date" value={newPeriodStart} onChange={(e) => setNewPeriodStart(e.target.value)} className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" /></div>
+                    <div><label className="block text-[11px] mb-1 text-slate-600 dark:text-slate-300">End date</label><input type="date" min={newPeriodStart} value={newPeriodEnd} onChange={(e) => setNewPeriodEnd(e.target.value)} className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" /></div>
+                  </div>
+                  <button type="button" disabled={isSaving} onClick={handleAddPeriod} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50">Save period</button>
+                </div>
+              )}
             </div>
           </div>
 
