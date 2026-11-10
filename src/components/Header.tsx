@@ -8,7 +8,6 @@ import {
   Copy,
   Check,
   Calendar,
-  ExternalLink,
 } from 'lucide-react';
 import { NavSection } from '../types/index.ts';
 
@@ -107,24 +106,8 @@ export function Header({
           <span>{todayFormatted}</span>
         </div>
 
-        {/* Right: Smartlink Perks + Account menu */}
-        <div className="flex items-center gap-3">
-          {/* Adsterra Smartlink 31447845 */}
-          <a
-            id="header-smartlink-btn"
-            href="https://www.profitableratecpmnetwork.com/pms2uea0?key=912ffa416c42760703ac9a7af1a48332"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer"
-            title="Explore free student perks, rewards, and tools"
-          >
-            <span>🎁</span>
-            <span className="hidden sm:inline">Student Perks</span>
-            <span className="sm:hidden">Perks</span>
-            <ExternalLink className="w-3 h-3 opacity-90 shrink-0" />
-          </a>
-
-          <div className="relative" ref={menuRef}>
+        {/* Right: Account menu */}
+        <div className="relative" ref={menuRef}>
           <button
             id="account-profile-menu-btn"
             type="button"
@@ -211,7 +194,6 @@ export function Header({
               </div>
             </div>
           )}
-          </div>
         </div>
       </div>
     </header>

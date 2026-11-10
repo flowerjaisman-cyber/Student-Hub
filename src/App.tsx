@@ -20,7 +20,6 @@ import { MyFilesView } from './components/files/MyFilesView.tsx';
 import { AIStudyView } from './components/ai-study/AIStudyView.tsx';
 import { ProgressView } from './components/progress/ProgressView.tsx';
 import { AttendanceView } from './components/attendance/AttendanceView.tsx';
-import { NativeBannerAd } from './components/ads/NativeBannerAd.tsx';
 import {
   NavSection,
   UserDocument,
@@ -257,9 +256,6 @@ function MainAppShell() {
                 onNavigate={handleNavigate}
               />
             )}
-
-          {/* Adsterra Native Banner (Unit 31447846) 4:1 Widget */}
-          <NativeBannerAd />
         </main>
       </div>
     </div>

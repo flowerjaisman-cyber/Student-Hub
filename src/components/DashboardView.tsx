@@ -23,8 +23,6 @@ import {
   Calendar,
   CalendarCheck,
   TrendingUp,
-  Gift,
-  ExternalLink,
 } from 'lucide-react';
 import { NavSection, UserDocument, UserNote, UserFile } from '../types/index.ts';
 import {
@@ -201,57 +199,6 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>Free Local Workspace Active</span>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Article & Academic Success Guide Spotlight */}
-      <section
-        id="featured-article-card"
-        className="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch"
-      >
-        <div className="md:w-5/12 lg:w-4/12 relative min-h-[220px] bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-          <img
-            src="https://cdn.phototourl.com/member/2026-10-02-a2671f37-d865-4858-ba8a-3d99118dce8b.png"
-            alt="Featured Student Article & Study Guide"
-            className="w-full h-full object-cover min-h-[220px]"
-            loading="eager"
-          />
-          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-indigo-600/90 text-white text-[11px] font-bold tracking-wide backdrop-blur-xs shadow-xs">
-            FEATURED GUIDE
-          </div>
-        </div>
-        <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Student Success Spotlight</span>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <span className="text-slate-500">Academic Productivity</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-tight">
-              Essential Student Utilities &amp; Academic Success Workspace
-            </h2>
-            <p className="mt-2.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              Discover all-in-one productivity tools tailored for students — including GPA calculation, timetable management, cloud study notes, Document Studio, AI assistance, and attendance tracking.
-            </p>
-          </div>
-          <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => onNavigate('study-tools')}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-            >
-              <span>Open Study Tools</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('pdf-docs')}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all cursor-pointer"
-            >
-              <span>Document Studio</span>
-            </button>
           </div>
         </div>
       </section>
@@ -614,45 +561,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
       </section>
 
-      {/* Adsterra Unit 31447845: Smartlink (Student Perks & Deals) */}
-      <section
-        id="student-perks-banner"
-        className="p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-indigo-500/10 border border-amber-500/30 shadow-2xs relative overflow-hidden"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Gift className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  Exclusive Student Perks &amp; Learning Deals
-                </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white uppercase tracking-wider">
-                  Featured
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-xl">
-                Unlock free educational tools, bonus study guides, student discounts, and partner rewards.
-              </p>
-            </div>
-          </div>
-
-          <a
-            id="dashboard-smartlink-btn"
-            href="https://www.profitableratecpmnetwork.com/pms2uea0?key=912ffa416c42760703ac9a7af1a48332"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold shadow-sm hover:shadow transition-all shrink-0 cursor-pointer"
-          >
-            <span>Explore Free Perks</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        </div>
-      </section>
-
-      {/* 5. Local Workspace Information Section */}
+      {/* 4. Local Workspace Information Section */}
       <section
         id="account-information-card"
         className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs"

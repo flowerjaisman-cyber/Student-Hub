@@ -13,8 +13,6 @@ import {
   X,
   ShieldCheck,
   LogOut,
-  Gift,
-  ExternalLink,
 } from 'lucide-react';
 import { NavSection } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -147,35 +145,6 @@ export function Sidebar({
             );
           })}
         </nav>
-
-        {/* Adsterra Smartlink 31447845: Student Deals & Perks */}
-        <div className="px-3 pb-2">
-          <a
-            id="sidebar-smartlink-btn"
-            href="https://www.profitableratecpmnetwork.com/pms2uea0?key=912ffa416c42760703ac9a7af1a48332"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-indigo-500/10 hover:from-amber-500/20 hover:via-orange-500/20 hover:to-indigo-500/20 border border-amber-500/30 text-slate-800 dark:text-slate-100 transition-all duration-200 group cursor-pointer shadow-2xs"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Gift className="w-3.5 h-3.5" />
-              </div>
-              <div className="truncate text-left">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">Student Perks</span>
-                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500 text-white uppercase tracking-wider">
-                    Free
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                  Bonus rewards &amp; tools
-                </p>
-              </div>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 transition-colors shrink-0" />
-          </a>
-        </div>
 
         {/* Bottom account info */}
         <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
