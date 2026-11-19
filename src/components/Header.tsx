@@ -68,7 +68,7 @@ export function Header({
             type="button"
             onClick={onToggleMobileMenu}
             aria-label="Toggle Navigation Menu"
-            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shrink-0"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -137,7 +137,7 @@ export function Header({
             {menuOpen && (
               <div
                 id="account-dropdown-menu"
-                className="absolute right-0 mt-2 w-72 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-2 z-50"
+                className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-2 z-50"
               >
                 <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-3">

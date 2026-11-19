@@ -406,11 +406,11 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
   return (
     <div id="admin-panel-view" className="space-y-6 pb-12">
       {/* Top Console Header */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mb-1">
-              <span>{adminSession?.email || 'Administrator'}</span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 dark:text-slate-400 mb-1">
+              <span className="break-all">{adminSession?.email || 'Administrator'}</span>
               <span aria-hidden="true">·</span>
               <span className="tabular-nums">Last published {formattedUpdated}</span>
               {hasUnsavedChanges && (
@@ -427,13 +427,13 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {hasUnsavedChanges && (
               <button
                 type="button"
                 onClick={handleDiscardDraft}
                 disabled={saving}
-                className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="min-h-[40px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Discard
               </button>
@@ -444,7 +444,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
               type="button"
               onClick={() => handlePublishDraft('Published dashboard and site updates', 'Dashboard')}
               disabled={saving || !hasUnsavedChanges}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[40px] inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{saving ? 'Publishing...' : 'Publish Changes'}</span>
@@ -454,7 +454,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
               id="admin-view-dashboard-btn"
               type="button"
               onClick={() => onNavigate('dashboard')}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/70 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[40px] inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/70 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>View Live Dashboard</span>
@@ -464,7 +464,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
               id="admin-logout-btn"
               type="button"
               onClick={logoutAdmin}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/60 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[40px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/60 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
@@ -492,7 +492,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
         )}
 
         {/* Navigation Tabs */}
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto">
+        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto pb-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -501,7 +501,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`min-h-[40px] inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   active
                     ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
@@ -623,41 +623,71 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                      <th className="py-3 px-5">Time</th>
-                      <th className="py-3 px-4">Section</th>
-                      <th className="py-3 px-4">Change Summary</th>
-                      <th className="py-3 px-5 text-right">Administrator</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                    {adminLogs.slice(0, 15).map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                        <td className="py-3 px-5 text-slate-500 dark:text-slate-400 whitespace-nowrap tabular-nums">
+              <>
+                {/* Mobile stacked log cards */}
+                <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                  {adminLogs.slice(0, 15).map((log) => (
+                    <div key={log.id} className="p-4 space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {log.section}
+                        </span>
+                        <span className="tabular-nums">
                           {new Intl.DateTimeFormat('en-US', {
                             month: 'short',
                             day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit',
                           }).format(new Date(log.timestamp))}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                          {log.section}
-                        </td>
-                        <td className="py-3 px-4 text-slate-900 dark:text-slate-100">
-                          {log.summary}
-                        </td>
-                        <td className="py-3 px-5 text-right text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                          {log.adminEmail}
-                        </td>
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium text-slate-900 dark:text-slate-100">
+                        {log.summary}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                        {log.adminEmail}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        <th className="py-3 px-5">Time</th>
+                        <th className="py-3 px-4">Section</th>
+                        <th className="py-3 px-4">Change Summary</th>
+                        <th className="py-3 px-5 text-right">Administrator</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                      {adminLogs.slice(0, 15).map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                          <td className="py-3 px-5 text-slate-500 dark:text-slate-400 whitespace-nowrap tabular-nums">
+                            {new Intl.DateTimeFormat('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }).format(new Date(log.timestamp))}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {log.section}
+                          </td>
+                          <td className="py-3 px-4 text-slate-900 dark:text-slate-100">
+                            {log.summary}
+                          </td>
+                          <td className="py-3 px-5 text-right text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {log.adminEmail}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -666,8 +696,8 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
       {/* TAB 2: DASHBOARD HERO & SECTION VISIBILITY */}
       {activeTab === 'dashboard' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white">
                   Dashboard Hero &amp; Layout
@@ -680,7 +710,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 type="button"
                 onClick={() => handlePublishDraft('Updated Dashboard Hero content and visibility', 'Dashboard Hero')}
                 disabled={saving}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+                className="min-h-[40px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold whitespace-nowrap shrink-0 self-start sm:self-auto cursor-pointer"
               >
                 {saving ? 'Saving...' : 'Save & Publish'}
               </button>
@@ -701,7 +731,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
 
@@ -719,7 +749,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
             </div>
@@ -738,7 +768,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                   }));
                   setHasUnsavedChanges(true);
                 }}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm text-slate-900 dark:text-white"
               />
             </div>
 
@@ -756,7 +786,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                   }));
                   setHasUnsavedChanges(true);
                 }}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
               />
             </div>
 
@@ -774,7 +804,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                   }));
                   setHasUnsavedChanges(true);
                 }}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
               />
             </div>
 
@@ -793,7 +823,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
 
@@ -810,7 +840,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 >
                   {TARGET_SECTION_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -834,7 +864,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
 
@@ -851,7 +881,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 >
                   {TARGET_SECTION_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -947,7 +977,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
 
       {/* TAB 3: MODULES & NAVIGATION */}
       {activeTab === 'modules' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
@@ -961,7 +991,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
               type="button"
               onClick={() => handlePublishDraft('Updated module titles and descriptions', 'Modules')}
               disabled={saving || !hasUnsavedChanges}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[40px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-semibold whitespace-nowrap shrink-0 self-start sm:self-auto cursor-pointer"
             >
               {saving ? 'Saving...' : 'Save Text Edits'}
             </button>
@@ -994,7 +1024,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                       onClick={() => moveModuleLive(idx, -1)}
                       disabled={idx === 0 || saving}
                       aria-label={`Move ${mod.name} up`}
-                      className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-35 cursor-pointer"
+                      className="min-w-[38px] min-h-[38px] flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-35 cursor-pointer"
                     >
                       <ArrowUp className="w-3.5 h-3.5" />
                     </button>
@@ -1003,7 +1033,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                       onClick={() => moveModuleLive(idx, 1)}
                       disabled={idx === sortedModules.length - 1 || saving}
                       aria-label={`Move ${mod.name} down`}
-                      className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-35 cursor-pointer"
+                      className="min-w-[38px] min-h-[38px] flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-35 cursor-pointer"
                     >
                       <ArrowDown className="w-3.5 h-3.5" />
                     </button>
@@ -1011,7 +1041,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                       type="button"
                       onClick={() => toggleModuleLive(mod.id)}
                       disabled={saving}
-                      className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+                      className={`min-h-[38px] px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                         mod.enabled
                           ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                           : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'
@@ -1031,7 +1061,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                       type="text"
                       value={mod.name}
                       onChange={(e) => updateModuleField(mod.id, { name: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                     />
                   </div>
                   <div>
@@ -1042,7 +1072,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                       type="text"
                       value={mod.badge}
                       onChange={(e) => updateModuleField(mod.id, { badge: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                     />
                   </div>
                   <div>
@@ -1053,7 +1083,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                       type="text"
                       value={mod.description}
                       onChange={(e) => updateModuleField(mod.id, { description: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -1068,7 +1098,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <form
             onSubmit={handleSaveAnnouncement}
-            className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4"
+            className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4"
           >
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
               {editingAnnId ? 'Edit Announcement' : 'New Announcement'}
@@ -1086,7 +1116,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 value={annTitle}
                 onChange={(e) => setAnnTitle(e.target.value)}
                 placeholder="e.g. Fall Exam Timetable Updated"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 required
               />
             </div>
@@ -1100,12 +1130,12 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 value={annMessage}
                 onChange={(e) => setAnnMessage(e.target.value)}
                 placeholder="Write a clear message for students..."
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Type
@@ -1113,7 +1143,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 <select
                   value={annSeverity}
                   onChange={(e) => setAnnSeverity(e.target.value as AnnouncementSeverity)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 >
                   <option value="info">Information</option>
                   <option value="success">Update / Live</option>
@@ -1121,7 +1151,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 </select>
               </div>
               <div className="flex items-end">
-                <label className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                <label className="w-full min-h-[42px] flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                   <span>Publish Active</span>
                   <input
                     type="checkbox"
@@ -1133,7 +1163,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Link Label (Optional)
@@ -1143,7 +1173,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                   value={annLinkLabel}
                   onChange={(e) => setAnnLinkLabel(e.target.value)}
                   placeholder="Open Link"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
               <div>
@@ -1155,7 +1185,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                   value={annLinkUrl}
                   onChange={(e) => setAnnLinkUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
             </div>
@@ -1284,7 +1314,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <form
             onSubmit={handleSaveResource}
-            className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4"
+            className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4"
           >
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
               {editingResId ? 'Edit Resource Link' : 'Add Featured Resource'}
@@ -1302,12 +1332,12 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 value={resTitle}
                 onChange={(e) => setResTitle(e.target.value)}
                 placeholder="e.g. University Past Papers Archive"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Category
@@ -1317,11 +1347,11 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                   value={resCategory}
                   onChange={(e) => setResCategory(e.target.value)}
                   placeholder="Academic"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
               <div className="flex items-end">
-                <label className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                <label className="w-full min-h-[42px] flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                   <span>Visible</span>
                   <input
                     type="checkbox"
@@ -1342,7 +1372,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 value={resUrl}
                 onChange={(e) => setResUrl(e.target.value)}
                 placeholder="https://example.edu/resources"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 required
               />
             </div>
@@ -1356,7 +1386,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 value={resDesc}
                 onChange={(e) => setResDesc(e.target.value)}
                 placeholder="Brief summary of what students will find at this link..."
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
               />
             </div>
 
@@ -1475,8 +1505,8 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
       {activeTab === 'branding' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Branding & Maintenance */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 Branding &amp; Maintenance
               </h2>
@@ -1484,7 +1514,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 type="button"
                 onClick={() => handlePublishDraft('Updated site branding & maintenance settings', 'Branding')}
                 disabled={saving}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer"
+                className="min-h-[40px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold whitespace-nowrap self-start sm:self-auto cursor-pointer"
               >
                 {saving ? 'Saving...' : 'Save & Publish'}
               </button>
@@ -1505,7 +1535,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
               <div>
@@ -1522,7 +1552,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
               <div>
@@ -1539,13 +1569,13 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-              <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer">
+              <label className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer">
                 <div>
                   <p className="text-xs font-bold text-slate-900 dark:text-white">
                     Maintenance Mode
@@ -1565,7 +1595,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                  className="w-4 h-4 accent-indigo-600 cursor-pointer shrink-0"
                 />
               </label>
 
@@ -1583,7 +1613,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
 
@@ -1601,12 +1631,12 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                     }));
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold text-slate-900 dark:text-white">
                   Factory Reset
@@ -1618,7 +1648,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
               <button
                 type="button"
                 onClick={() => setConfirmResetOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-200 dark:border-red-900/60 text-xs font-semibold text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                className="min-h-[40px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-200 dark:border-red-900/60 text-xs font-semibold text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 whitespace-nowrap self-start sm:self-auto cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Defaults</span>
@@ -1629,21 +1659,21 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
           {/* Administrator Security */}
           <form
             onSubmit={handleChangePassword}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4"
           >
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div>
+            <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="min-w-0">
                 <h2 className="text-base font-bold text-slate-900 dark:text-white">
                   Administrator Security
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                   Signed in as {adminSession?.email}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPwFields((p) => !p)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white shrink-0 cursor-pointer"
               >
                 {showPwFields ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 <span>{showPwFields ? 'Hide' : 'Show'}</span>
@@ -1659,7 +1689,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 value={currentPw}
                 onChange={(e) => setCurrentPw(e.target.value)}
                 required
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
               />
             </div>
 
@@ -1673,7 +1703,7 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 onChange={(e) => setNewPw(e.target.value)}
                 minLength={6}
                 required
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
               />
             </div>
 
@@ -1687,14 +1717,14 @@ export function AdminPanelView({ onNavigate }: AdminPanelViewProps) {
                 onChange={(e) => setConfirmPw(e.target.value)}
                 minLength={6}
                 required
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs text-slate-900 dark:text-white"
               />
             </div>
 
             <button
               type="submit"
               disabled={pwSaving}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 disabled:opacity-50 cursor-pointer"
+              className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 disabled:opacity-50 cursor-pointer"
             >
               <KeyRound className="w-3.5 h-3.5" />
               <span>{pwSaving ? 'Updating...' : 'Update Admin Password'}</span>
