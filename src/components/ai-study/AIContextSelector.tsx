@@ -12,9 +12,7 @@ import {
   Info,
 } from 'lucide-react';
 import {
-  UserDocument,
   UserNote,
-  UserFile,
   StudyAssignment,
   StudySubject,
 } from '../../types/index.ts';
@@ -32,9 +30,7 @@ export interface ActiveContext {
 interface AIContextSelectorProps {
   activeContext: ActiveContext;
   onContextChange: (ctx: ActiveContext) => void;
-  documents: UserDocument[];
   notes: UserNote[];
-  files: UserFile[];
   assignments: StudyAssignment[];
   subjects: StudySubject[];
   compact?: boolean;
@@ -43,9 +39,7 @@ interface AIContextSelectorProps {
 export const AIContextSelector: React.FC<AIContextSelectorProps> = ({
   activeContext,
   onContextChange,
-  documents,
   notes,
-  files,
   assignments,
   subjects,
   compact = false,
@@ -65,22 +59,6 @@ export const AIContextSelector: React.FC<AIContextSelectorProps> = ({
       title: 'Custom Study Material',
       content: customText,
       charCount: customText.length,
-    });
-    setDropdownOpen(false);
-  };
-
-  const handleSelectDocument = (doc: UserDocument) => {
-    // Strip HTML tags for clean AI processing
-    const cleanText = (doc.content || '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    onContextChange({
-      type: 'document',
-      id: doc.id,
-      title: doc.title || 'Untitled Document',
-      content: cleanText,
-      charCount: cleanText.length,
     });
     setDropdownOpen(false);
   };
@@ -114,19 +92,6 @@ export const AIContextSelector: React.FC<AIContextSelectorProps> = ({
       type: 'subject',
       id: subj.id,
       title: subj.name,
-      content: text,
-      charCount: text.length,
-    });
-    setDropdownOpen(false);
-  };
-
-  const handleSelectFile = (file: UserFile) => {
-    // In browser, if plain text or notes
-    const text = `File: ${file.name} (${Math.round(file.size / 1024)} KB)\nMIME: ${file.mimeType}`;
-    onContextChange({
-      type: 'file',
-      id: file.id,
-      title: file.name,
       content: text,
       charCount: text.length,
     });
@@ -244,41 +209,6 @@ export const AIContextSelector: React.FC<AIContextSelectorProps> = ({
                 Use Custom Text ({customText.length} chars)
               </button>
             </div>
-          </div>
-
-          {/* Documents Section */}
-          <div>
-            <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-rose-500" />
-              <span>Document Studio Documents ({documents.length})</span>
-            </div>
-            {documents.length === 0 ? (
-              <p className="text-[11px] text-slate-400 italic">No documents saved in Document Studio yet.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {documents.slice(0, 6).map((doc) => (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    onClick={() => handleSelectDocument(doc)}
-                    className={`text-left p-2.5 rounded-xl border transition-colors cursor-pointer ${
-                      activeContext.id === doc.id
-                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40'
-                        : 'border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="font-semibold text-xs text-slate-900 dark:text-white truncate">
-                      {doc.title || 'Untitled Document'}
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2">
-                      <span>{doc.category || 'General'}</span>
-                      <span>•</span>
-                      <span>{doc.wordCount || 0} words</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Notes Section */}

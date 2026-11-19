@@ -398,7 +398,7 @@ export function SettingsView() {
             </span>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-200/60 dark:border-slate-700/60 pt-2">
-            All your files, notes, study tasks, documents, and attendance records are saved securely inside your browser's LocalStorage and IndexedDB. There is no login barrier or external dependency required to use any feature.
+            All your notes, study tasks, and workspace preferences are saved securely inside your browser's LocalStorage. There is no login barrier or external dependency required to use any feature.
           </p>
         </div>
 
@@ -425,7 +425,7 @@ export function SettingsView() {
                     Are you sure you want to reset your local workspace?
                   </p>
                   <p className="text-xs text-rose-800 dark:text-rose-300 mt-0.5">
-                    This will clear all locally saved documents, tasks, attendance records, and files. This action cannot be undone.
+                    This will clear all locally saved tasks, notes, and workspace settings. This action cannot be undone.
                   </p>
                 </div>
               </div>

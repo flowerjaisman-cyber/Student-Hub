@@ -1,21 +1,18 @@
 import {
   LayoutDashboard,
-  CalendarCheck,
   Image as ImageIcon,
-  FileText,
   PenTool,
   Calculator,
   GraduationCap,
-  FolderClosed,
   Settings,
   Sparkles,
-  TrendingUp,
   X,
   ShieldCheck,
-  LogOut,
+  Lock,
 } from 'lucide-react';
-import { NavSection } from '../types/index.ts';
+import { NavSection, ConfigurableModuleId } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useSiteConfig } from '../context/SiteConfigContext.tsx';
 
 interface SidebarProps {
   currentSection: NavSection;
@@ -24,26 +21,13 @@ interface SidebarProps {
   onCloseMobile: () => void;
 }
 
-interface NavItem {
-  id: NavSection;
-  label: string;
-  icon: typeof LayoutDashboard;
-  badge?: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'attendance', label: 'Attendance', icon: CalendarCheck, badge: 'Phase 13 • Live' },
-  { id: 'progress', label: 'Progress', icon: TrendingUp, badge: 'Phase 12 • Live' },
-  { id: 'ai-study', label: 'AI Study', icon: Sparkles, badge: 'Phase 11 • Live' },
-  { id: 'pdf-docs', label: 'Document Studio', icon: FileText, badge: 'Phase 10 • Live' },
-  { id: 'my-files', label: 'My Files', icon: FolderClosed, badge: 'Phase 9 • Live' },
-  { id: 'study-tools', label: 'Study Tools', icon: GraduationCap, badge: 'Phase 8' },
-  { id: 'writing-tools', label: 'Writing Tools', icon: PenTool, badge: 'Phase 6' },
-  { id: 'image-tools', label: 'Image Tools', icon: ImageIcon, badge: 'Phase 2 & 3' },
-  { id: 'calculators', label: 'Calculators', icon: Calculator, badge: 'Phase 7' },
-  { id: 'settings', label: 'Settings', icon: Settings },
-];
+const MODULE_ICONS: Record<ConfigurableModuleId, typeof LayoutDashboard> = {
+  'ai-study': Sparkles,
+  'study-tools': GraduationCap,
+  'writing-tools': PenTool,
+  'image-tools': ImageIcon,
+  calculators: Calculator,
+};
 
 export function Sidebar({
   currentSection,
@@ -51,7 +35,8 @@ export function Sidebar({
   mobileOpen,
   onCloseMobile,
 }: SidebarProps) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
+  const { config, adminSession } = useSiteConfig();
 
   const handleSelect = (section: NavSection) => {
     onNavigate(section);
@@ -59,6 +44,27 @@ export function Sidebar({
   };
 
   const displayName = profile?.displayName || user?.displayName || 'Student';
+
+  const activeModuleItems = [...config.modules]
+    .filter((m) => m.enabled)
+    .sort((a, b) => a.order - b.order)
+    .map((m) => ({
+      id: m.id as NavSection,
+      label: m.name,
+      icon: MODULE_ICONS[m.id] || Sparkles,
+      badge: m.badge,
+    }));
+
+  const navItems: Array<{
+    id: NavSection;
+    label: string;
+    icon: typeof LayoutDashboard;
+    badge?: string;
+  }> = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ...activeModuleItems,
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
 
   return (
     <>
@@ -80,16 +86,16 @@ export function Sidebar({
       >
         {/* Brand header */}
         <div className="h-16 px-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                StudentHub
+            <div className="min-w-0">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                {config.branding.siteName}
               </h2>
-              <p className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">
-                Student Utilities
+              <p className="text-[10px] text-slate-600 dark:text-slate-400 font-medium truncate">
+                {config.branding.siteSubtitle}
               </p>
             </div>
           </div>
@@ -107,16 +113,14 @@ export function Sidebar({
         {/* Navigation list */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           <div className="px-3 mb-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
               Workspace
             </span>
           </div>
 
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              currentSection === item.id ||
-              (item.id === 'pdf-docs' && currentSection === 'documents');
+            const isActive = currentSection === item.id;
 
             return (
               <button
@@ -137,7 +141,7 @@ export function Sidebar({
                 />
                 <span className="truncate flex-1 text-left">{item.label}</span>
                 {item.badge && !isActive && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0">
                     {item.badge}
                   </span>
                 )}
@@ -146,8 +150,8 @@ export function Sidebar({
           })}
         </nav>
 
-        {/* Bottom account info */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        {/* Bottom workspace & admin link */}
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2">
           <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 shadow-2xs">
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -156,9 +160,28 @@ export function Sidebar({
               </span>
             </div>
             <p className="text-[10px] text-slate-600 dark:text-slate-400 truncate">
-              {displayName} (Free Access)
+              {displayName} · Free Access
             </p>
           </div>
+
+          <button
+            id="sidebar-admin-portal-btn"
+            type="button"
+            onClick={() => handleSelect('admin')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
+              currentSection === 'admin'
+                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white'
+                : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              <span>Admin Panel</span>
+            </span>
+            {adminSession && (
+              <span className="text-[10px] font-medium opacity-80">Signed In</span>
+            )}
+          </button>
         </div>
       </aside>
     </>

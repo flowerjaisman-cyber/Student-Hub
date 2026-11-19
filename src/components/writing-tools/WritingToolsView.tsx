@@ -35,7 +35,6 @@ import {
 
 interface WritingToolsViewProps {
   initialToolId?: WritingToolId;
-  onNavigateToDocumentStudio?: () => void;
 }
 
 interface ToolDefinition {
@@ -131,7 +130,7 @@ const TOOLS_CONFIG: ToolDefinition[] = [
   {
     id: 'writing-pad',
     name: 'Quick Writing Pad',
-    shortDesc: 'Distraction-free scratchpad with direct save to Document Studio.',
+    shortDesc: 'Distraction-free scratchpad with session persistence and .TXT export.',
     category: 'citations',
     icon: Feather,
     tags: ['pad', 'scratchpad', 'notes', 'draft', 'save'],
@@ -148,7 +147,6 @@ const TOOLS_CONFIG: ToolDefinition[] = [
 
 export function WritingToolsView({
   initialToolId = 'formatter',
-  onNavigateToDocumentStudio,
 }: WritingToolsViewProps) {
   const [activeTool, setActiveTool] = useState<WritingToolId>(initialToolId);
   const [searchQuery, setSearchQuery] = useState('');
@@ -384,16 +382,8 @@ export function WritingToolsView({
         {activeTool === 'readability' && <ReadabilityCheckerTool />}
         {activeTool === 'sentence-paragraph' && <SentenceParagraphTool />}
         {activeTool === 'list-numbering' && <ListNumberingTool />}
-        {activeTool === 'citation' && (
-          <CitationFormatterTool
-            onNavigateToDocumentStudio={onNavigateToDocumentStudio}
-          />
-        )}
-        {activeTool === 'writing-pad' && (
-          <QuickWritingPad
-            onNavigateToDocumentStudio={onNavigateToDocumentStudio}
-          />
-        )}
+        {activeTool === 'citation' && <CitationFormatterTool />}
+        {activeTool === 'writing-pad' && <QuickWritingPad />}
         {activeTool === 'spellcheck' && <SpellcheckAssistantTool />}
       </div>
     </div>

@@ -138,7 +138,7 @@ export const AINotesAssistant: React.FC<AINotesAssistantProps> = ({
 
         {notes.length === 0 ? (
           <div className="py-6 text-center text-xs text-slate-400">
-            No notes found. Create notes in Document Studio or Notes to use this tool.
+            No notes found. Create notes in your Study Notes to use this tool.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 text-xs">

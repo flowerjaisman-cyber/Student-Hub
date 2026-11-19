@@ -20,11 +20,8 @@ import {
   ArrowDownAZ,
   ExternalLink,
   BookOpen,
-  FileText,
   RotateCcw,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { saveUserDocument } from '../../services/userService.ts';
 
 const SAMPLE_INITIAL_SOURCE: CitationSource = {
   id: 'cit_1',
@@ -39,18 +36,11 @@ const SAMPLE_INITIAL_SOURCE: CitationSource = {
   doi: '10.1002/andp.19053221004',
 };
 
-export function CitationFormatterTool({
-  onNavigateToDocumentStudio,
-}: {
-  onNavigateToDocumentStudio?: () => void;
-}) {
-  const { user } = useAuth();
+export function CitationFormatterTool() {
   const [sources, setSources] = useState<CitationSource[]>([SAMPLE_INITIAL_SOURCE]);
   const [selectedStyle, setSelectedStyle] = useState<CitationStyle>('apa7');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
-  const [savingDoc, setSavingDoc] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Form state for creating / editing a citation
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -170,46 +160,6 @@ export function CitationFormatterTool({
     );
   };
 
-  const handleSaveToDocumentStudio = async () => {
-    if (!user || !fullBibliographyText) return;
-    try {
-      setSavingDoc(true);
-      const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const htmlContent = `<h1>Bibliography (${selectedStyle.toUpperCase()})</h1><div style="margin-top: 1.5rem;">${sources
-        .map(
-          (s) =>
-            `<p style="padding-left: 2rem; text-indent: -2rem; margin-bottom: 1rem;">${formatCitation(s, selectedStyle).formattedText}</p>`
-        )
-        .join('')}</div>`;
-
-      await saveUserDocument(user.uid, {
-        id: docId,
-        title: `Bibliography (${selectedStyle.toUpperCase()})`,
-        content: htmlContent,
-        category: 'Assignment',
-        pageSize: 'A4',
-        orientation: 'portrait',
-        margins: 'normal',
-        wordCount: fullBibliographyText.split(/\s+/).length,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      setSaveSuccess(true);
-      setTimeout(() => {
-        setSaveSuccess(false);
-        if (onNavigateToDocumentStudio) {
-          onNavigateToDocumentStudio();
-        }
-      }, 1500);
-    } catch (err) {
-      console.error('Failed to save bibliography as document:', err);
-      alert('Could not save to Document Studio. Please verify connection.');
-    } finally {
-      setSavingDoc(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -310,19 +260,6 @@ export function CitationFormatterTool({
             <Download className="w-3.5 h-3.5" />
             <span>Download .TXT</span>
           </button>
-
-          {user && (
-            <button
-              type="button"
-              onClick={handleSaveToDocumentStudio}
-              disabled={sources.length === 0 || savingDoc}
-              className="px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer"
-              title="Save bibliography as an editable document in Document Studio"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>{saveSuccess ? 'Saved & Opening...' : savingDoc ? 'Saving...' : 'Save as Document'}</span>
-            </button>
-          )}
         </div>
       </div>
 

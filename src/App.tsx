@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
+import { SiteConfigProvider, useSiteConfig } from './context/SiteConfigContext.tsx';
 import { LoadingScreen } from './components/LoadingScreen.tsx';
 import { Header } from './components/Header.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
@@ -12,27 +13,24 @@ import { DashboardView } from './components/DashboardView.tsx';
 import { SettingsView } from './components/SettingsView.tsx';
 import { ToolPlaceholderView } from './components/ToolPlaceholderView.tsx';
 import { ImageToolsView } from './components/image-tools/ImageToolsView.tsx';
-import { DocumentStudioView } from './components/document-studio/DocumentStudioView.tsx';
 import { WritingToolsView } from './components/writing-tools/WritingToolsView.tsx';
 import { CalculatorsView } from './components/calculators/CalculatorsView.tsx';
 import { StudyPlannerView, StudyTabType } from './components/study/StudyPlannerView.tsx';
-import { MyFilesView } from './components/files/MyFilesView.tsx';
 import { AIStudyView } from './components/ai-study/AIStudyView.tsx';
-import { ProgressView } from './components/progress/ProgressView.tsx';
-import { AttendanceView } from './components/attendance/AttendanceView.tsx';
+import { AdminLoginView } from './components/admin/AdminLoginView.tsx';
+import { AdminPanelView } from './components/admin/AdminPanelView.tsx';
+import { Lock, Wrench, ArrowLeft } from 'lucide-react';
 import {
   NavSection,
-  UserDocument,
   UserNote,
-  UserFile,
   StudyTask,
   StudyAssignment,
   StudyExam,
   StudyHabit,
   StudySubject,
+  ConfigurableModuleId,
 } from './types/index.ts';
-import { subscribeUserDocuments } from './services/documentService.ts';
-import { subscribeToUserNotes, subscribeToUserFiles } from './services/userService.ts';
+import { subscribeToUserNotes } from './services/userService.ts';
 import {
   subscribeStudyTasks,
   subscribeStudyAssignments,
@@ -41,16 +39,22 @@ import {
   subscribeStudySubjects,
 } from './services/studyService.ts';
 
+const CONFIGURABLE_SECTIONS: ConfigurableModuleId[] = [
+  'ai-study',
+  'study-tools',
+  'writing-tools',
+  'image-tools',
+  'calculators',
+];
+
 function MainAppShell() {
   const { user, loading, settings } = useAuth();
-  
+  const { config, adminSession, adminChecking } = useSiteConfig();
+
   // Route determination helper
   const getSectionFromPath = (path: string): { section: NavSection; tab?: StudyTabType } => {
-    if (path === '/attendance' || path.startsWith('/attendance/')) return { section: 'attendance' };
-    if (path === '/progress' || path.startsWith('/progress/')) return { section: 'progress' };
+    if (path === '/admin' || path.startsWith('/admin/')) return { section: 'admin' };
     if (path === '/ai-study' || path.startsWith('/ai-study/')) return { section: 'ai-study' };
-    if (path === '/files' || path === '/my-files' || path.startsWith('/files/')) return { section: 'my-files' };
-    if (path === '/documents' || path === '/pdf-docs' || path.startsWith('/documents/')) return { section: 'pdf-docs' };
     if (path === '/notes' || path === '/writing-tools') return { section: 'writing-tools' };
     if (path === '/tasks') return { section: 'study-tools', tab: 'tasks' };
     if (path === '/calendar') return { section: 'study-tools', tab: 'timetable' };
@@ -61,19 +65,20 @@ function MainAppShell() {
     return { section: 'dashboard' };
   };
 
-  const initialRoute = typeof window !== 'undefined' ? getSectionFromPath(window.location.pathname) : { section: 'dashboard' as NavSection };
+  const initialRoute =
+    typeof window !== 'undefined'
+      ? getSectionFromPath(window.location.pathname)
+      : { section: 'dashboard' as NavSection };
 
   const [currentSection, setCurrentSection] = useState<NavSection>(initialRoute.section);
   const [studyTab, setStudyTab] = useState<StudyTabType>(initialRoute.tab || 'today');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Active AI Context when navigated from Document Studio or files
-  const [aiInitialContext, setAiInitialContext] = useState<any>(null);
+  // Active AI Context
+  const [aiInitialContext] = useState<any>(null);
 
   // Real-time data states
-  const [documents, setDocuments] = useState<UserDocument[]>([]);
   const [notes, setNotes] = useState<UserNote[]>([]);
-  const [files, setFiles] = useState<UserFile[]>([]);
   const [tasks, setTasks] = useState<StudyTask[]>([]);
   const [assignments, setAssignments] = useState<StudyAssignment[]>([]);
   const [exams, setExams] = useState<StudyExam[]>([]);
@@ -84,16 +89,10 @@ function MainAppShell() {
   const handleNavigate = (section: NavSection) => {
     setCurrentSection(section);
     if (typeof window !== 'undefined') {
-      if (section === 'attendance') {
-        window.history.pushState({}, '', '/attendance');
-      } else if (section === 'progress') {
-        window.history.pushState({}, '', '/progress');
+      if (section === 'admin') {
+        window.history.pushState({}, '', '/admin');
       } else if (section === 'ai-study') {
         window.history.pushState({}, '', '/ai-study');
-      } else if (section === 'my-files') {
-        window.history.pushState({}, '', '/files');
-      } else if (section === 'pdf-docs' || section === 'documents') {
-        window.history.pushState({}, '', '/documents');
       } else if (section === 'writing-tools') {
         window.history.pushState({}, '', '/notes');
       } else if (section === 'study-tools') {
@@ -119,14 +118,17 @@ function MainAppShell() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Subscribe to real data in Firestore
+  // Sync browser document title with Admin Branding
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = `${config.branding.siteName} — ${config.branding.heroSubtitle}`;
+    }
+  }, [config.branding.siteName, config.branding.heroSubtitle]);
+
+  // Subscribe to real data in local store
   useEffect(() => {
     if (!user?.uid) return;
-    const unsubDocs = subscribeUserDocuments(user.uid, (d) =>
-      setDocuments(d.filter((doc) => !doc.deleted && !doc.isTrashed))
-    );
     const unsubNotes = subscribeToUserNotes(user.uid, setNotes);
-    const unsubFiles = subscribeToUserFiles(user.uid, setFiles);
     const unsubTasks = subscribeStudyTasks(user.uid, setTasks);
     const unsubAssign = subscribeStudyAssignments(user.uid, setAssignments);
     const unsubExams = subscribeStudyExams(user.uid, setExams);
@@ -134,9 +136,7 @@ function MainAppShell() {
     const unsubSubj = subscribeStudySubjects(user.uid, setSubjects);
 
     return () => {
-      unsubDocs();
       unsubNotes();
-      unsubFiles();
       unsubTasks();
       unsubAssign();
       unsubExams();
@@ -151,6 +151,13 @@ function MainAppShell() {
 
   const activeUserId = user?.uid || 'student_user';
   const isCompact = settings?.compactView || false;
+
+  const isModuleDisabled =
+    CONFIGURABLE_SECTIONS.includes(currentSection as ConfigurableModuleId) &&
+    config.modules.find((m) => m.id === currentSection)?.enabled === false;
+
+  const isMaintenanceBlocked =
+    config.maintenance.enabled && currentSection !== 'admin' && !adminSession;
 
   return (
     <div
@@ -181,81 +188,102 @@ function MainAppShell() {
             isCompact ? 'p-3 sm:p-5 max-w-7xl w-full mx-auto' : 'p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'
           }`}
         >
-          {currentSection === 'dashboard' && (
-            <DashboardView onNavigate={handleNavigate} />
+          {currentSection === 'admin' ? (
+            adminChecking ? (
+              <div className="py-20 text-center text-xs text-slate-500 dark:text-slate-400">
+                Verifying administrator session...
+              </div>
+            ) : adminSession ? (
+              <AdminPanelView onNavigate={handleNavigate} />
+            ) : (
+              <AdminLoginView onBackToDashboard={() => handleNavigate('dashboard')} />
+            )
+          ) : isMaintenanceBlocked ? (
+            <div className="min-h-[60vh] flex items-center justify-center px-4">
+              <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
+                  <Wrench className="w-6 h-6" />
+                </div>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+                  {config.maintenance.title || 'Scheduled Maintenance'}
+                </h1>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  {config.maintenance.message}
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate('admin')}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Admin Sign In</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : isModuleDisabled ? (
+            <div className="min-h-[50vh] flex items-center justify-center px-4">
+              <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-4">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Module Currently Unavailable
+                </h1>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  This module has been temporarily hidden by the site administrator.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('dashboard')}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Return to Dashboard</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {currentSection === 'dashboard' && (
+                <DashboardView onNavigate={handleNavigate} />
+              )}
+
+              {currentSection === 'ai-study' && (
+                <AIStudyView
+                  userId={activeUserId}
+                  notes={notes}
+                  tasks={tasks}
+                  assignments={assignments}
+                  exams={exams}
+                  habits={habits}
+                  subjects={subjects}
+                  initialContext={aiInitialContext}
+                />
+              )}
+
+              {currentSection === 'settings' && <SettingsView />}
+
+              {currentSection === 'image-tools' && <ImageToolsView />}
+
+              {currentSection === 'writing-tools' && <WritingToolsView />}
+
+              {currentSection === 'calculators' && <CalculatorsView />}
+
+              {currentSection === 'study-tools' && <StudyPlannerView initialTab={studyTab} />}
+
+              {currentSection !== 'dashboard' &&
+                currentSection !== 'ai-study' &&
+                currentSection !== 'settings' &&
+                currentSection !== 'image-tools' &&
+                currentSection !== 'writing-tools' &&
+                currentSection !== 'calculators' &&
+                currentSection !== 'study-tools' && (
+                  <ToolPlaceholderView
+                    section={currentSection}
+                    onNavigate={handleNavigate}
+                  />
+                )}
+            </>
           )}
-
-          {currentSection === 'attendance' && (
-            <AttendanceView onNavigate={handleNavigate} />
-          )}
-
-          {currentSection === 'progress' && (
-            <ProgressView onNavigate={handleNavigate} />
-          )}
-
-          {currentSection === 'ai-study' && (
-            <AIStudyView
-              userId={activeUserId}
-              documents={documents}
-              notes={notes}
-              files={files}
-              tasks={tasks}
-              assignments={assignments}
-              exams={exams}
-              habits={habits}
-              subjects={subjects}
-              initialContext={aiInitialContext}
-            />
-          )}
-
-          {currentSection === 'settings' && <SettingsView />}
-
-          {currentSection === 'image-tools' && <ImageToolsView />}
-
-          {(currentSection === 'pdf-docs' || currentSection === 'documents') && (
-            <DocumentStudioView
-              onNavigate={handleNavigate}
-              onLaunchAIWithDoc={(doc) => {
-                const clean = (doc.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                setAiInitialContext({
-                  type: 'document',
-                  id: doc.id,
-                  title: doc.title || 'Document',
-                  content: clean,
-                });
-                handleNavigate('ai-study');
-              }}
-            />
-          )}
-
-          {currentSection === 'writing-tools' && (
-            <WritingToolsView
-              onNavigateToDocumentStudio={() => handleNavigate('pdf-docs')}
-            />
-          )}
-
-          {currentSection === 'calculators' && <CalculatorsView />}
-
-          {currentSection === 'study-tools' && <StudyPlannerView initialTab={studyTab} />}
-
-          {currentSection === 'my-files' && <MyFilesView />}
-
-          {currentSection !== 'dashboard' &&
-            currentSection !== 'attendance' &&
-            currentSection !== 'progress' &&
-            currentSection !== 'ai-study' &&
-            currentSection !== 'settings' &&
-            currentSection !== 'image-tools' &&
-            currentSection !== 'pdf-docs' &&
-            currentSection !== 'writing-tools' &&
-            currentSection !== 'calculators' &&
-            currentSection !== 'study-tools' &&
-            currentSection !== 'my-files' && (
-              <ToolPlaceholderView
-                section={currentSection}
-                onNavigate={handleNavigate}
-              />
-            )}
         </main>
       </div>
     </div>
@@ -265,7 +293,9 @@ function MainAppShell() {
 export default function App() {
   return (
     <AuthProvider>
-      <MainAppShell />
+      <SiteConfigProvider>
+        <MainAppShell />
+      </SiteConfigProvider>
     </AuthProvider>
   );
 }

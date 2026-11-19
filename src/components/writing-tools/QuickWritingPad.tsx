@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { saveUserDocument } from '../../services/userService.ts';
 import {
   copyToClipboard,
   downloadTextFile,
@@ -13,21 +11,12 @@ import {
   Check,
   Download,
   Trash2,
-  FileText,
   AlignLeft,
   AlignRight,
   Clock,
-  Sparkles,
-  Save,
-  CheckCircle2,
 } from 'lucide-react';
 
-interface QuickWritingPadProps {
-  onNavigateToDocumentStudio?: () => void;
-}
-
-export function QuickWritingPad({ onNavigateToDocumentStudio }: QuickWritingPadProps) {
-  const { user } = useAuth();
+export function QuickWritingPad() {
   const [text, setText] = useState(() => {
     // Load from active browser session storage if available
     try {
@@ -40,8 +29,6 @@ export function QuickWritingPad({ onNavigateToDocumentStudio }: QuickWritingPadP
   const [docTitle, setDocTitle] = useState('Draft Notes');
   const [direction, setDirection] = useState<'ltr' | 'rtl' | 'auto'>('auto');
   const [copied, setCopied] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
 
   // Sync to sessionStorage for temporary active session persistence (NOT Firestore spam)
   useEffect(() => {
@@ -74,53 +61,6 @@ export function QuickWritingPad({ onNavigateToDocumentStudio }: QuickWritingPadP
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
     downloadTextFile(`${sanitizedTitle || 'writing-draft'}.txt`, text);
-  };
-
-  const handleSaveToFirestore = async () => {
-    if (!user) {
-      alert('Please sign in to save documents to your cloud workspace.');
-      return;
-    }
-    if (!text.trim()) {
-      alert('Please enter some text before saving.');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      // Convert plain text paragraphs into HTML paragraphs for Document Studio
-      const htmlContent = text
-        .split(/\n\s*\n/)
-        .map((p) => `<p>${p.replace(/\n/g, '<br/>')}</p>`)
-        .join('');
-
-      await saveUserDocument(user.uid, {
-        id: docId,
-        title: docTitle.trim() || 'Untitled Draft',
-        content: htmlContent,
-        category: 'Notes',
-        pageSize: 'A4',
-        orientation: 'portrait',
-        margins: 'normal',
-        wordCount: metrics.wordCount,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      setSaveSuccessMessage('Saved to your cloud workspace!');
-      setTimeout(() => {
-        setSaveSuccessMessage(null);
-        if (onNavigateToDocumentStudio) {
-          onNavigateToDocumentStudio();
-        }
-      }, 1500);
-    } catch (error) {
-      console.error('Failed to save document:', error);
-      alert('Could not save document to Firestore. Please check your network connection.');
-    } finally {
-      setSaving(false);
-    }
   };
 
   return (
@@ -236,25 +176,8 @@ export function QuickWritingPad({ onNavigateToDocumentStudio }: QuickWritingPadP
             <Trash2 className="w-3.5 h-3.5" />
             <span>Clear</span>
           </button>
-
-          <button
-            type="button"
-            onClick={handleSaveToFirestore}
-            disabled={!text.trim() || saving}
-            className="px-3.5 py-1 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>{saveSuccessMessage ? 'Saved!' : saving ? 'Saving...' : 'Save as Document'}</span>
-          </button>
         </div>
       </div>
-
-      {saveSuccessMessage && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-semibold animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          <span>{saveSuccessMessage} Redirecting to Document Studio...</span>
-        </div>
-      )}
 
       {/* Text Area */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">

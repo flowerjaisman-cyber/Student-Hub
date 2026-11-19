@@ -3,7 +3,6 @@ import {
   ImageMetadata,
   loadImageFromFile,
 } from '../../utils/imageUtils.ts';
-import { MyFilesPickerModal } from '../files/MyFilesPickerModal.tsx';
 import { ImageDropzone } from './ImageDropzone.tsx';
 import { ImageMetaBar } from './ImageMetaBar.tsx';
 import { FormatConverterTab } from './FormatConverterTab.tsx';
@@ -76,7 +75,6 @@ export function ImageToolsView() {
 
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showCloudPicker, setShowCloudPicker] = useState(false);
 
   const handleFilesSelected = async (files: File[]) => {
     if (files.length === 0) return;
@@ -277,35 +275,9 @@ export function ImageToolsView() {
                     <span>Decoding image...</span>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <ImageDropzone onFilesSelected={handleFilesSelected} />
-                    <div className="flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setShowCloudPicker(true)}
-                        className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer shadow-2xs transition-colors"
-                      >
-                        <ImageIcon className="w-4 h-4 text-indigo-500" />
-                        <span>Choose from My Files</span>
-                      </button>
-                    </div>
-                  </div>
+                  <ImageDropzone onFilesSelected={handleFilesSelected} />
                 )}
               </div>
-
-              {/* Cloud File Picker Modal */}
-              <MyFilesPickerModal
-                isOpen={showCloudPicker}
-                onClose={() => setShowCloudPicker(false)}
-                allowedCategories={['images']}
-                title="Select an Image from My Files"
-                onSelectFile={(userFile, blob) => {
-                  const file = new File([blob], userFile.name, {
-                    type: userFile.mimeType || 'image/jpeg',
-                  });
-                  handleFilesSelected([file]);
-                }}
-              />
             </div>
           ) : (
             <div className="space-y-6">

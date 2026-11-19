@@ -1,10 +1,8 @@
 import {
   Image as ImageIcon,
-  FileText,
   PenTool,
   Calculator,
   GraduationCap,
-  FolderClosed,
   ArrowLeft,
   Clock,
   CheckCircle2,
@@ -35,18 +33,6 @@ const SECTION_CONFIGS: Partial<Record<NavSection, SectionConfig>> = {
       'Coursework and assignment image compression without quality loss',
       'Batch image dimension resizing and cropping',
       'Document photo scanner and contrast enhancer',
-    ],
-  },
-  'pdf-docs': {
-    title: 'PDF & Documents',
-    subtitle: 'Comprehensive PDF manipulation and document utilities for academic work.',
-    phase: 'Phase 4 & 5',
-    icon: FileText,
-    features: [
-      'Merge multiple PDF documents or lecture slides into a single file',
-      'Split PDFs and extract specific page ranges for reading assignments',
-      'Compress large academic PDFs to meet submission file size limits',
-      'Convert between PDF, Markdown, and formatted student notes',
     ],
   },
   'writing-tools': {
@@ -83,18 +69,6 @@ const SECTION_CONFIGS: Partial<Record<NavSection, SectionConfig>> = {
       'Spaced repetition flashcards with Firestore cloud sync',
       'Assignment and exam countdown scheduler',
       'Course progress and syllabus milestone tracker',
-    ],
-  },
-  'my-files': {
-    title: 'My Files',
-    subtitle: 'Personal student cloud file manager isolated to your Google account.',
-    phase: 'Phase 9',
-    icon: FolderClosed,
-    features: [
-      'Private cloud file storage partitioned by Firebase UID',
-      'Categorization by courses, semesters, and subjects',
-      'Fast search and tag filtering for documents and media',
-      'Zero cross-account data leakage with strict Firestore rules',
     ],
   },
 };

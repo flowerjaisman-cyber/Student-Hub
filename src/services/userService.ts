@@ -2,9 +2,7 @@ import { localDb } from '../lib/localDb.ts';
 import {
   UserProfile,
   UserSettings,
-  UserDocument,
   UserNote,
-  UserFile,
 } from '../types/index.ts';
 
 export type Unsubscribe = () => void;
@@ -108,125 +106,6 @@ export function subscribeToUserSettings(
       onUpdate(main || null);
     }
   );
-}
-
-/**
- * Subscribe to recent user files (real data only, empty state when none exist)
- */
-export function subscribeToUserFiles(
-  uid: string,
-  onUpdate: (files: UserFile[]) => void
-): Unsubscribe {
-  return localDb.subscribe<UserFile>('files', uid, onUpdate, {
-    orderByField: 'createdAt',
-    orderDirection: 'desc',
-    limitCount: 5,
-  });
-}
-
-/**
- * Subscribe to recent user documents (real data only, empty state when none exist)
- */
-export function subscribeToUserDocuments(
-  uid: string,
-  onUpdate: (docs: UserDocument[]) => void
-): Unsubscribe {
-  return localDb.subscribe<UserDocument>('documents', uid, onUpdate, {
-    orderByField: 'updatedAt',
-    orderDirection: 'desc',
-    limitCount: 5,
-  });
-}
-
-/**
- * Subscribe to all user documents for the Document Studio workspace
- */
-export function subscribeToAllUserDocuments(
-  uid: string,
-  onUpdate: (docs: UserDocument[]) => void,
-  onError?: (err: Error) => void
-): Unsubscribe {
-  return localDb.subscribe<UserDocument>('documents', uid, onUpdate, {
-    orderByField: 'updatedAt',
-    orderDirection: 'desc',
-  });
-}
-
-/**
- * Fetch a single document by ID
- */
-export async function getUserDocument(
-  uid: string,
-  docId: string
-): Promise<UserDocument | null> {
-  return localDb.getItem<UserDocument>('documents', uid, docId);
-}
-
-/**
- * Save or update a document
- */
-export async function saveUserDocument(
-  uid: string,
-  document: UserDocument
-): Promise<void> {
-  const now = new Date().toISOString();
-  const dataToSave: UserDocument = {
-    ...document,
-    updatedAt: now,
-    createdAt: document.createdAt || now,
-  };
-  localDb.saveItem('documents', uid, dataToSave);
-}
-
-/**
- * Delete a user document
- */
-export async function deleteUserDocument(
-  uid: string,
-  docId: string
-): Promise<void> {
-  localDb.deleteItem('documents', uid, docId);
-}
-
-/**
- * Duplicate an existing document with a new ID and preserved contents/settings
- */
-export async function duplicateUserDocument(
-  uid: string,
-  sourceDoc: UserDocument
-): Promise<UserDocument> {
-  const newId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-  const now = new Date().toISOString();
-  const newTitle = `${sourceDoc.title} Copy`;
-
-  const newDoc: UserDocument = {
-    ...sourceDoc,
-    id: newId,
-    title: newTitle,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await saveUserDocument(uid, newDoc);
-  return newDoc;
-}
-
-/**
- * Rename a document
- */
-export async function renameUserDocument(
-  uid: string,
-  docId: string,
-  newTitle: string
-): Promise<void> {
-  const current = localDb.getItem<UserDocument>('documents', uid, docId);
-  if (current) {
-    localDb.saveItem('documents', uid, {
-      ...current,
-      title: newTitle.trim(),
-      updatedAt: new Date().toISOString(),
-    });
-  }
 }
 
 /**

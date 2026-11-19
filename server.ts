@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import crypto from 'crypto';
 import { GoogleGenAI, Type } from '@google/genai';
 
 dotenv.config();
@@ -756,187 +757,442 @@ ${JSON.stringify(metadata, null, 2)}`;
 });
 
 // ==========================================
-// 12. ACADEMIC PROGRESS INSIGHTS & REPORTS (PHASE 12)
+// ADMIN PANEL & LIVE SITE CONFIG API
 // ==========================================
 
-app.post('/api/ai/progress-insights', async (req: Request, res: Response) => {
+const DATA_DIR = path.resolve(__dirname, 'data');
+const SITE_CONFIG_FILE = path.join(DATA_DIR, 'site-config.json');
+const ADMIN_LOGS_FILE = path.join(DATA_DIR, 'admin-logs.json');
+const ADMIN_AUTH_FILE = path.join(DATA_DIR, 'admin-auth.json');
+const ADMIN_SECRET_FILE = path.join(DATA_DIR, 'admin-secret.key');
+
+const DEFAULT_ADMIN_EMAIL_SHA256 =
+  '7a644e06316a1a31356b74ea42df2c7a8b1227f0914f62ad49d838324ef1b5a8';
+const DEFAULT_ADMIN_PASS_SHA256 =
+  '60d8973013541a9f102b7dd00142153941c7f989c2fb210d230b4a3fadf9d16f';
+
+const DEFAULT_SERVER_SITE_CONFIG = {
+  branding: {
+    siteName: 'StudentHub',
+    siteSubtitle: 'Student Utilities',
+    headerBadge: 'Workspace',
+    welcomeBadge: 'Unified Academic Workspace',
+    heroTitle: 'Welcome to StudentHub',
+    heroSubtitle: 'Everything a Student Needs — In One Place.',
+    heroDescription:
+      'Your single unified station for student tools. Writing & Academic Tools, Study Planner, Calculators, AI Study Assistant, and Image Tools are active with zero fake data, 100% private client processing, and local workspace persistence.',
+    primaryCtaLabel: 'Launch Writing Tools',
+    primaryCtaTarget: 'writing-tools',
+    secondaryCtaLabel: 'Image Tools',
+    secondaryCtaTarget: 'image-tools',
+    workspaceStatusLabel: 'Free Local Workspace Active',
+  },
+  sections: {
+    showWelcomeCard: true,
+    showAnnouncements: true,
+    showQuickTools: true,
+    showFeaturedResources: true,
+    showWorkspaceWidgets: true,
+    showWorkspaceInfo: true,
+  },
+  maintenance: {
+    enabled: false,
+    title: 'Scheduled Maintenance',
+    message:
+      'StudentHub is currently undergoing scheduled maintenance. Please check back shortly.',
+  },
+  announcements: [] as any[],
+  modules: [
+    {
+      id: 'ai-study',
+      name: 'AI Study Assistant',
+      description: 'Understand, summarize, organize, and improve your study material.',
+      badge: 'Live',
+      enabled: true,
+      order: 0,
+    },
+    {
+      id: 'study-tools',
+      name: 'Study Planner & Productivity',
+      description:
+        'Tasks, assignments, exams, timetable, study sessions stopwatch, goals, habits streak tracker, and Pomodoro timer.',
+      badge: 'Planner',
+      enabled: true,
+      order: 1,
+    },
+    {
+      id: 'writing-tools',
+      name: 'Writing & Academic Tools',
+      description:
+        'Text cleaner, case converter, duplicate remover, citation generator (APA/MLA/Chicago/Harvard), text compare diff, and readability analysis.',
+      badge: 'Academic',
+      enabled: true,
+      order: 2,
+    },
+    {
+      id: 'image-tools',
+      name: 'Image Tools (Standard & Advanced)',
+      description:
+        'Background removal, passport photos, DPI calculator, metadata, image-to-PDF, watermark, convert, and crop.',
+      badge: 'Utilities',
+      enabled: true,
+      order: 3,
+    },
+    {
+      id: 'calculators',
+      name: 'Calculators & Converters',
+      description:
+        'GPA projections, academic marks, scientific math, date & live exam countdowns, unit & financial converters.',
+      badge: 'Tools',
+      enabled: true,
+      order: 4,
+    },
+  ],
+  resources: [] as any[],
+  updatedAt: new Date().toISOString(),
+};
+
+let inMemorySiteConfig = structuredClone(DEFAULT_SERVER_SITE_CONFIG);
+let inMemoryAdminLogs: any[] = [];
+let inMemoryAuthOverride: { emailHash: string; passwordSalt: string; passwordHash: string } | null = null;
+let cachedSessionSecret: string | null = null;
+
+function ensureDataDir() {
   try {
-    if (!aiClient) {
-      return res.status(503).json({ error: 'AI Client not configured. Missing GEMINI_API_KEY.' });
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-
-    const { data, userFocus } = req.body;
-    if (!data) {
-      return res.status(400).json({ error: 'Progress data is required for insights analysis.' });
-    }
-
-    const prompt = `You are StudentHub's Academic Analytics Advisor. You are analyzing verified, student-recorded academic data for period/range: "${data.dateRangeLabel || 'Selected Range'}".
-
-CRITICAL INTEGRITY AND OBJECTIVITY RULES:
-1. STRICT DATA GROUNDING:
-   - Base all observations SOLELY on the supplied numbers and categories.
-   - NEVER invent, hallucinate, or assume activities, grades, or study sessions that are not explicitly present in the data.
-   - If a category is 0 or has no records, state that objectively without disparaging words.
-2. CATEGORICAL SEPARATION (MANDATORY):
-   - "observations": List 2 to 4 strictly factual statements derived directly from the numbers (e.g. "Completed X of Y tasks", "Logged Z hours across N study sessions", "Recorded M academic assessment results with an average of P%").
-   - "patterns": List 1 to 3 objective patterns observed from the distribution (e.g., "Most study time was concentrated in [Subject]", "Study sessions averaged X minutes").
-   - "suggestions": List 2 to 3 constructive, optional academic workflow tips. NEVER present suggestions as facts.
-3. NEUTRAL & RESPECTFUL TONE:
-   - NEVER judge the student's intellect, character, motivation, or predict whether they will pass or fail.
-   - Use objective, neutral academic language.
-
-${userFocus ? `User's requested focus: "${userFocus}"\n` : ''}
-VERIFIED ACADEMIC DATA SNAPSHOT:
-${JSON.stringify(data, null, 2)}`;
-
-    const response = await aiClient.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: {
-        systemInstruction: BASE_SYSTEM_INSTRUCTION,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            observations: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: 'Strictly factual statements derived from the verified data',
-            },
-            patterns: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: 'Objective trends or distributions seen in the numbers',
-            },
-            suggestions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: 'Optional, practical tips (never presented as facts or judgments)',
-            },
-          },
-          required: ['observations', 'patterns', 'suggestions'],
-        },
-      },
-    });
-
-    const parsed = JSON.parse(response.text || '{}');
-    res.json(parsed);
-  } catch (err: any) {
-    handleAIError(res, err);
+  } catch {
+    // fallback to in-memory only if filesystem is read-only
   }
+}
+
+function getSessionSecret(): string {
+  if (process.env.ADMIN_SESSION_SECRET) return process.env.ADMIN_SESSION_SECRET;
+  if (cachedSessionSecret) return cachedSessionSecret;
+
+  try {
+    ensureDataDir();
+    if (fs.existsSync(ADMIN_SECRET_FILE)) {
+      cachedSessionSecret = fs.readFileSync(ADMIN_SECRET_FILE, 'utf8').trim();
+      if (cachedSessionSecret) return cachedSessionSecret;
+    }
+    cachedSessionSecret = crypto.randomBytes(32).toString('hex');
+    fs.writeFileSync(ADMIN_SECRET_FILE, cachedSessionSecret, 'utf8');
+    return cachedSessionSecret;
+  } catch {
+    cachedSessionSecret = crypto.randomBytes(32).toString('hex');
+    return cachedSessionSecret;
+  }
+}
+
+function readSiteConfigFromDisk() {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(SITE_CONFIG_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(SITE_CONFIG_FILE, 'utf8'));
+      inMemorySiteConfig = {
+        ...structuredClone(DEFAULT_SERVER_SITE_CONFIG),
+        ...raw,
+        branding: { ...DEFAULT_SERVER_SITE_CONFIG.branding, ...(raw.branding || {}) },
+        sections: { ...DEFAULT_SERVER_SITE_CONFIG.sections, ...(raw.sections || {}) },
+        maintenance: { ...DEFAULT_SERVER_SITE_CONFIG.maintenance, ...(raw.maintenance || {}) },
+        announcements: Array.isArray(raw.announcements) ? raw.announcements : [],
+        modules: Array.isArray(raw.modules) && raw.modules.length > 0 ? raw.modules : structuredClone(DEFAULT_SERVER_SITE_CONFIG.modules),
+        resources: Array.isArray(raw.resources) ? raw.resources : [],
+      };
+    }
+  } catch {
+    // ignore read error and return memory config
+  }
+  return inMemorySiteConfig;
+}
+
+function writeSiteConfigToDisk(config: any) {
+  inMemorySiteConfig = config;
+  try {
+    ensureDataDir();
+    fs.writeFileSync(SITE_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+  } catch {
+    // ignore disk error on read-only filesystem
+  }
+}
+
+function readAdminLogsFromDisk(): any[] {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(ADMIN_LOGS_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(ADMIN_LOGS_FILE, 'utf8'));
+      if (Array.isArray(parsed)) {
+        inMemoryAdminLogs = parsed;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return inMemoryAdminLogs;
+}
+
+function appendAdminLogToDisk(entry: { summary: string; section: string; adminEmail: string }): any[] {
+  const existing = readAdminLogsFromDisk();
+  const next = [
+    {
+      id: `log_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+      summary: entry.summary,
+      section: entry.section,
+      timestamp: new Date().toISOString(),
+      adminEmail: entry.adminEmail,
+    },
+    ...existing,
+  ].slice(0, 50);
+
+  inMemoryAdminLogs = next;
+  try {
+    ensureDataDir();
+    fs.writeFileSync(ADMIN_LOGS_FILE, JSON.stringify(next, null, 2), 'utf8');
+  } catch {
+    // ignore
+  }
+  return next;
+}
+
+function sha256(val: string): string {
+  return crypto.createHash('sha256').update(val).digest('hex');
+}
+
+function safeEqualHex(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function readAuthOverride() {
+  if (inMemoryAuthOverride) return inMemoryAuthOverride;
+  try {
+    ensureDataDir();
+    if (fs.existsSync(ADMIN_AUTH_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(ADMIN_AUTH_FILE, 'utf8'));
+      if (parsed?.emailHash && parsed?.passwordSalt && parsed?.passwordHash) {
+        inMemoryAuthOverride = parsed;
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function verifyAdminCredentials(emailInput: string, passwordInput: string): boolean {
+  const cleanEmail = emailInput.trim().toLowerCase();
+  const inputEmailHash = sha256(cleanEmail);
+
+  const expectedEmailHash = process.env.ADMIN_EMAIL
+    ? sha256(process.env.ADMIN_EMAIL.trim().toLowerCase())
+    : DEFAULT_ADMIN_EMAIL_SHA256;
+
+  if (!safeEqualHex(inputEmailHash, expectedEmailHash)) {
+    return false;
+  }
+
+  const override = readAuthOverride();
+  if (override && safeEqualHex(override.emailHash, inputEmailHash)) {
+    const derived = crypto.scryptSync(passwordInput, override.passwordSalt, 64).toString('hex');
+    return safeEqualHex(derived, override.passwordHash);
+  }
+
+  const expectedPassHash = process.env.ADMIN_PASSWORD
+    ? sha256(process.env.ADMIN_PASSWORD)
+    : DEFAULT_ADMIN_PASS_SHA256;
+
+  return safeEqualHex(sha256(passwordInput), expectedPassHash);
+}
+
+function signAdminToken(email: string): { token: string; expiresAt: string } {
+  const expMs = Date.now() + 24 * 60 * 60 * 1000;
+  const payload = Buffer.from(
+    JSON.stringify({ email, exp: expMs }),
+    'utf8'
+  ).toString('base64url');
+  const sig = crypto
+    .createHmac('sha256', getSessionSecret())
+    .update(payload)
+    .digest('base64url');
+  return {
+    token: `${payload}.${sig}`,
+    expiresAt: new Date(expMs).toISOString(),
+  };
+}
+
+function verifyAdminToken(token: string): { email: string; exp: number } | null {
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [payload, sig] = parts;
+  const expectedSig = crypto
+    .createHmac('sha256', getSessionSecret())
+    .update(payload)
+    .digest('base64url');
+
+  if (!safeEqualHex(sig, expectedSig)) return null;
+
+  try {
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!decoded?.email || typeof decoded.exp !== 'number' || decoded.exp <= Date.now()) {
+      return null;
+    }
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+function requireAdminAuth(req: Request, res: Response): { email: string } | null {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!token) {
+    res.status(401).json({ error: 'Admin authentication required.' });
+    return null;
+  }
+  const session = verifyAdminToken(token);
+  if (!session) {
+    res.status(401).json({ error: 'Admin session expired or invalid. Please sign in again.' });
+    return null;
+  }
+  return { email: session.email };
+}
+
+// Public endpoint consumed by Dashboard & App Shell
+app.get('/api/site-config', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(readSiteConfigFromDisk());
 });
 
-app.post('/api/ai/progress-report', async (req: Request, res: Response) => {
-  try {
-    if (!aiClient) {
-      return res.status(503).json({ error: 'AI Client not configured. Missing GEMINI_API_KEY.' });
-    }
-
-    const { format, dateRangeLabel, data, includedCategories } = req.body;
-    if (!data) {
-      return res.status(400).json({ error: 'Progress data is required for report generation.' });
-    }
-
-    const prompt = `Generate a structured, professional Academic Progress Report in GitHub-flavored Markdown.
-
-REPORT FORMAT: ${format || 'summary'}
-DATE RANGE / PERIOD: ${dateRangeLabel || 'Active Range'}
-INCLUDED DATA CATEGORIES: ${(includedCategories || []).join(', ') || 'All Available'}
-
-CRITICAL ACCURACY MANDATES:
-1. ONLY use data present in the VERIFIED ACADEMIC DATA payload below.
-2. NEVER fabricate grades, exam scores, completed courses, study hours, or dates.
-3. If a section has no data, explicitly state "No recorded data for this metric in the selected period."
-4. Structure the report cleanly with Markdown headings (#, ##, ###), key metrics summary table or bullet list, coursework status, study activity summary, and neutral closing review.
-5. NEVER declare "You will pass" or evaluate student character/ability. Maintain an encouraging yet strictly factual tone.
-
-VERIFIED ACADEMIC DATA:
-${JSON.stringify(data, null, 2)}`;
-
-    const response = await aiClient.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: {
-        systemInstruction: BASE_SYSTEM_INSTRUCTION,
-      },
-    });
-
-    const reportContent = response.text || '# Academic Progress Report\n\nNo content generated.';
-    res.json({ reportContent });
-  } catch (err: any) {
-    handleAIError(res, err);
+// Admin Login
+app.post('/api/admin/login', (req: Request, res: Response) => {
+  const { email, password } = req.body || {};
+  if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
+    return res.status(400).json({ error: 'Username (email) and password are required.' });
   }
+
+  if (!verifyAdminCredentials(email, password)) {
+    return res.status(401).json({ error: 'Invalid username or password.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const { token, expiresAt } = signAdminToken(cleanEmail);
+  res.json({
+    token,
+    expiresAt,
+    admin: { email: cleanEmail },
+  });
 });
 
-app.post('/api/attendance/analyze', async (req: Request, res: Response) => {
-  try {
-    if (!aiClient) {
-      return res.status(503).json({ error: 'AI Client not configured. Missing GEMINI_API_KEY.' });
-    }
+// Verify Admin Session
+app.get('/api/admin/session', (req: Request, res: Response) => {
+  const admin = requireAdminAuth(req, res);
+  if (!admin) return;
+  res.json({ authenticated: true, admin });
+});
 
-    const { recordsCount, overallStats, bySubject, targetPercentage, dateRangeLabel, periodName } = req.body;
+// Get Admin Logs
+app.get('/api/admin/logs', (req: Request, res: Response) => {
+  const admin = requireAdminAuth(req, res);
+  if (!admin) return;
+  res.json({ logs: readAdminLogsFromDisk() });
+});
 
-    if (recordsCount === 0 || !overallStats) {
-      return res.status(400).json({ error: 'No attendance records provided for analysis.' });
-    }
+// Save & Publish Live Site Config
+app.put('/api/admin/config', (req: Request, res: Response) => {
+  const admin = requireAdminAuth(req, res);
+  if (!admin) return;
 
-    const prompt = `You are the StudentHub Academic Attendance Intelligence Engine. Analyze the following verified student attendance records for ${periodName ? `Academic Period "${periodName}"` : 'the student'} (${dateRangeLabel}).
-
-CRITICAL INSTRUCTIONS & STRICT ACCURACY MANDATES:
-1. ONLY utilize the data provided in the VERIFIED ATTENDANCE DATA payload below.
-2. Separate your output into THREE distinct sections:
-   - "observations": Strictly factual statements and counts directly from the numbers (e.g., "Total recorded classes: 24 with 20 attended, 3 absent, 1 late.").
-   - "patterns": Factual patterns or trends visible in the subject numbers or attendance distributions.
-   - "suggestions": Optional, supportive, constructive study and schedule recommendations. Never present suggestions as facts or judgments.
-3. If a personal target is configured (${targetPercentage ? `${targetPercentage}%` : 'none'}), include a neutral, factual analysis note comparing the current percentage with the personal target. Mention that attendance target is a personal setting, not an official institutional rule.
-4. ABSOLUTE PROHIBITIONS:
-   - NEVER judge the student (e.g., do not call them "irresponsible", "failing", "lazy", or "at risk").
-   - NEVER make unsupported claims about institutional penalties, suspension, or expulsion.
-   - NEVER state "You will pass" or make guarantees.
-   - Maintain a neutral, factual, and empowering tone.
-
-VERIFIED ATTENDANCE DATA:
-${JSON.stringify({ recordsCount, overallStats, bySubject, targetPercentage, dateRangeLabel, periodName }, null, 2)}`;
-
-    const response = await aiClient.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: {
-        systemInstruction: BASE_SYSTEM_INSTRUCTION,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            observations: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: 'Strictly factual empirical statements from the numbers',
-            },
-            patterns: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: 'Factual patterns or distributions in the records',
-            },
-            suggestions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: 'Constructive suggestions for study routine or attendance reminders',
-            },
-            targetAnalysisNote: {
-              type: Type.STRING,
-              description: 'Factual comparison with personal target percentage if configured',
-            },
-          },
-          required: ['observations', 'patterns', 'suggestions'],
-        },
-      },
-    });
-
-    const parsed = JSON.parse(response.text || '{}');
-    res.json(parsed);
-  } catch (err: any) {
-    handleAIError(res, err);
+  const { config, summary, section } = req.body || {};
+  if (!config || typeof config !== 'object') {
+    return res.status(400).json({ error: 'Invalid configuration payload.' });
   }
+
+  const nextConfig = {
+    ...structuredClone(DEFAULT_SERVER_SITE_CONFIG),
+    ...config,
+    branding: { ...DEFAULT_SERVER_SITE_CONFIG.branding, ...(config.branding || {}) },
+    sections: { ...DEFAULT_SERVER_SITE_CONFIG.sections, ...(config.sections || {}) },
+    maintenance: { ...DEFAULT_SERVER_SITE_CONFIG.maintenance, ...(config.maintenance || {}) },
+    announcements: Array.isArray(config.announcements) ? config.announcements : [],
+    modules: Array.isArray(config.modules) && config.modules.length > 0 ? config.modules : structuredClone(DEFAULT_SERVER_SITE_CONFIG.modules),
+    resources: Array.isArray(config.resources) ? config.resources : [],
+    updatedAt: new Date().toISOString(),
+  };
+
+  writeSiteConfigToDisk(nextConfig);
+  const logs = appendAdminLogToDisk({
+    summary: typeof summary === 'string' && summary.trim() ? summary.trim() : 'Updated site configuration',
+    section: typeof section === 'string' && section.trim() ? section.trim() : 'General',
+    adminEmail: admin.email,
+  });
+
+  res.json({ config: nextConfig, logs });
+});
+
+// Reset Site Config to Defaults
+app.post('/api/admin/config/reset', (req: Request, res: Response) => {
+  const admin = requireAdminAuth(req, res);
+  if (!admin) return;
+
+  const defaults = {
+    ...structuredClone(DEFAULT_SERVER_SITE_CONFIG),
+    updatedAt: new Date().toISOString(),
+  };
+  writeSiteConfigToDisk(defaults);
+  const logs = appendAdminLogToDisk({
+    summary: 'Reset site configuration to defaults',
+    section: 'System',
+    adminEmail: admin.email,
+  });
+
+  res.json({ config: defaults, logs });
+});
+
+// Change Admin Password
+app.post('/api/admin/change-password', (req: Request, res: Response) => {
+  const admin = requireAdminAuth(req, res);
+  if (!admin) return;
+
+  const { currentPassword, newPassword } = req.body || {};
+  if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+    return res.status(400).json({ error: 'Current and new passwords are required.' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+  }
+  if (!verifyAdminCredentials(admin.email, currentPassword)) {
+    return res.status(401).json({ error: 'Current password is incorrect.' });
+  }
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = crypto.scryptSync(newPassword, salt, 64).toString('hex');
+  const payload = {
+    emailHash: sha256(admin.email),
+    passwordSalt: salt,
+    passwordHash,
+    updatedAt: new Date().toISOString(),
+  };
+
+  inMemoryAuthOverride = payload;
+  try {
+    ensureDataDir();
+    fs.writeFileSync(ADMIN_AUTH_FILE, JSON.stringify(payload, null, 2), 'utf8');
+  } catch {
+    // ignore disk error
+  }
+
+  appendAdminLogToDisk({
+    summary: 'Updated admin console password',
+    section: 'Security',
+    adminEmail: admin.email,
+  });
+
+  res.json({ success: true });
 });
 
 // ==========================================

@@ -15,9 +15,7 @@ import {
   Activity,
 } from 'lucide-react';
 import {
-  UserDocument,
   UserNote,
-  UserFile,
   StudyTask,
   StudyAssignment,
   StudyExam,
@@ -39,9 +37,7 @@ import { getUserAIMaterials, checkAIServiceHealth } from '../../services/aiStudy
 
 interface AIStudyViewProps {
   userId: string;
-  documents: UserDocument[];
   notes: UserNote[];
-  files: UserFile[];
   tasks: StudyTask[];
   assignments: StudyAssignment[];
   exams: StudyExam[];
@@ -57,9 +53,7 @@ interface AIStudyViewProps {
 
 export const AIStudyView: React.FC<AIStudyViewProps> = ({
   userId,
-  documents,
   notes,
-  files,
   tasks,
   assignments,
   exams,
@@ -81,18 +75,6 @@ export const AIStudyView: React.FC<AIStudyViewProps> = ({
         title: initialContext.title,
         content: initialContext.content,
         charCount: initialContext.content.length,
-      };
-    }
-    // If user has documents, default to first document, otherwise direct prompt
-    if (documents.length > 0) {
-      const doc = documents[0];
-      const clean = (doc.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      return {
-        type: 'document',
-        id: doc.id,
-        title: doc.title || 'Untitled Document',
-        content: clean,
-        charCount: clean.length,
       };
     }
     return {
@@ -194,9 +176,7 @@ export const AIStudyView: React.FC<AIStudyViewProps> = ({
       <AIContextSelector
         activeContext={activeContext}
         onContextChange={setActiveContext}
-        documents={documents}
         notes={notes}
-        files={files}
         assignments={assignments}
         subjects={subjects}
       />

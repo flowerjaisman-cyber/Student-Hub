@@ -20,64 +20,6 @@ export interface UserSettings {
   updatedAt: string;
 }
 
-export type DocumentCategory =
-  | 'Blank'
-  | 'Assignment'
-  | 'Study Notes'
-  | 'Project Report'
-  | 'Class Summary'
-  | 'Meeting Notes'
-  | 'Personal Notes'
-  | 'Notes'
-  | 'Report'
-  | 'Application'
-  | 'Resume'
-  | 'Letter'
-  | 'Project'
-  | 'Other';
-
-export type PageSize = 'A4' | 'A5' | 'Letter' | 'Legal';
-export type PageOrientation = 'portrait' | 'landscape';
-export type PageMarginPreset = 'normal' | 'narrow' | 'wide' | 'custom';
-
-export interface PageMargins {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-export interface UserDocument {
-  id: string;
-  userId?: string;
-  title: string;
-  content: string;
-  category?: DocumentCategory | string;
-  docType?: string;
-  type?: string;
-  pageSize?: PageSize;
-  orientation?: PageOrientation;
-  margins?: PageMarginPreset;
-  customMargins?: PageMargins;
-  fontFamily?: string;
-  fontSize?: string;
-  wordCount?: number;
-  charCount?: number;
-  charWithoutSpacesCount?: number;
-  paragraphCount?: number;
-  readingTimeMinutes?: number;
-  folderId?: string | null;
-  isStarred?: boolean;
-  starred?: boolean;
-  isTrashed?: boolean;
-  deleted?: boolean;
-  deletedAt?: string | null;
-  storagePath?: string;
-  exportedFileId?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface UserNote {
   id: string;
   title: string;
@@ -86,67 +28,6 @@ export interface UserNote {
   updatedAt: string;
 }
 
-export interface UserFile {
-  id: string;
-  name: string;
-  size: number;
-  mimeType: string;
-  createdAt: string;
-  // Phase 9 extensions:
-  originalName?: string;
-  storagePath?: string;
-  downloadUrl?: string;
-  extension?: string;
-  folderId?: string | null;
-  updatedAt?: string;
-  uploadedAt?: string;
-  lastAccessedAt?: string;
-  deleted?: boolean;
-  deletedAt?: string | null;
-  previousFolderId?: string | null;
-  starred?: boolean;
-  width?: number;
-  height?: number;
-  pageCount?: number;
-}
-
-export interface CloudFolder {
-  id: string;
-  name: string;
-  parentFolderId?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deleted?: boolean;
-  deletedAt?: string | null;
-  starred?: boolean;
-  color?: string;
-}
-
-export interface FileUploadItem {
-  id: string;
-  file: File;
-  name: string;
-  size: number;
-  mimeType: string;
-  folderId?: string | null;
-  progress: number;
-  bytesTransferred: number;
-  totalBytes: number;
-  status: 'queued' | 'uploading' | 'saving' | 'completed' | 'failed' | 'paused' | 'canceled';
-  error?: string;
-  cancelFn?: () => void;
-  pauseFn?: () => void;
-  resumeFn?: () => void;
-}
-
-export type FileSortOption =
-  | 'name-asc'
-  | 'name-desc'
-  | 'newest'
-  | 'oldest'
-  | 'largest'
-  | 'smallest'
-  | 'type';
 
 export type FileFilterCategory =
   | 'all'
@@ -217,20 +98,13 @@ export interface ReadabilityMetrics {
 
 export type NavSection =
   | 'dashboard'
-  | 'attendance'
-  | 'progress'
   | 'image-tools'
-  | 'pdf-docs'
-  | 'documents'
   | 'writing-tools'
   | 'calculators'
   | 'study-tools'
-  | 'my-files'
   | 'ai-study'
-  | 'settings';
-
-export * from './progress.ts';
-export * from './attendance.ts';
+  | 'settings'
+  | 'admin';
 
 export type CalculatorCategory =
   | 'academic'
@@ -642,4 +516,90 @@ export interface AIProposedAction {
   payload: any;
 }
 
+export type AnnouncementSeverity = 'info' | 'warning' | 'success';
+
+export interface SiteAnnouncement {
+  id: string;
+  title: string;
+  message: string;
+  severity: AnnouncementSeverity;
+  linkLabel?: string;
+  linkUrl?: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export type ConfigurableModuleId =
+  | 'ai-study'
+  | 'study-tools'
+  | 'writing-tools'
+  | 'image-tools'
+  | 'calculators';
+
+export interface DashboardModuleConfig {
+  id: ConfigurableModuleId;
+  name: string;
+  description: string;
+  badge: string;
+  enabled: boolean;
+  order: number;
+}
+
+export interface FeaturedResourceLink {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  category: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface SiteBrandingConfig {
+  siteName: string;
+  siteSubtitle: string;
+  headerBadge: string;
+  welcomeBadge: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroDescription: string;
+  primaryCtaLabel: string;
+  primaryCtaTarget: NavSection;
+  secondaryCtaLabel: string;
+  secondaryCtaTarget: NavSection;
+  workspaceStatusLabel: string;
+}
+
+export interface SiteSectionVisibility {
+  showWelcomeCard: boolean;
+  showAnnouncements: boolean;
+  showQuickTools: boolean;
+  showFeaturedResources: boolean;
+  showWorkspaceWidgets: boolean;
+  showWorkspaceInfo: boolean;
+}
+
+export interface SiteMaintenanceConfig {
+  enabled: boolean;
+  title: string;
+  message: string;
+}
+
+export interface SiteConfig {
+  branding: SiteBrandingConfig;
+  sections: SiteSectionVisibility;
+  maintenance: SiteMaintenanceConfig;
+  announcements: SiteAnnouncement[];
+  modules: DashboardModuleConfig[];
+  resources: FeaturedResourceLink[];
+  updatedAt: string;
+}
+
+export interface AdminChangeLogEntry {
+  id: string;
+  summary: string;
+  section: string;
+  timestamp: string;
+  adminEmail: string;
+}
 
