@@ -7,8 +7,6 @@ import {
   Settings,
   Sparkles,
   X,
-  ShieldCheck,
-  Lock,
 } from 'lucide-react';
 import { NavSection, ConfigurableModuleId } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -36,7 +34,7 @@ export function Sidebar({
   onCloseMobile,
 }: SidebarProps) {
   const { user, profile } = useAuth();
-  const { config, adminSession } = useSiteConfig();
+  const { config } = useSiteConfig();
 
   const handleSelect = (section: NavSection) => {
     onNavigate(section);
@@ -150,7 +148,7 @@ export function Sidebar({
           })}
         </nav>
 
-        {/* Bottom workspace & admin link */}
+        {/* Bottom workspace */}
         <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2">
           <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 shadow-2xs">
             <div className="flex items-center gap-2 mb-1">
@@ -164,24 +162,7 @@ export function Sidebar({
             </p>
           </div>
 
-          <button
-            id="sidebar-admin-portal-btn"
-            type="button"
-            onClick={() => handleSelect('admin')}
-            className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
-              currentSection === 'admin'
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white'
-                : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span>Admin Panel</span>
-            </span>
-            {adminSession && (
-              <span className="text-[10px] font-medium opacity-80">Signed In</span>
-            )}
-          </button>
+
         </div>
       </aside>
     </>
