@@ -159,6 +159,23 @@ function MainAppShell() {
   const isMaintenanceBlocked =
     config.maintenance.enabled && currentSection !== 'admin' && !adminSession;
 
+  // Keep the administrator portal separate from the student workspace.
+  if (currentSection === 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        {adminChecking ? (
+          <div className="min-h-screen flex items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+            Verifying administrator session...
+          </div>
+        ) : adminSession ? (
+          <AdminPanelView onNavigate={handleNavigate} />
+        ) : (
+          <AdminLoginView onBackToDashboard={() => handleNavigate('dashboard')} />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       id="studenthub-app-shell"
@@ -188,17 +205,7 @@ function MainAppShell() {
             isCompact ? 'p-3 sm:p-5 max-w-7xl w-full mx-auto' : 'p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'
           }`}
         >
-          {currentSection === 'admin' ? (
-            adminChecking ? (
-              <div className="py-20 text-center text-xs text-slate-500 dark:text-slate-400">
-                Verifying administrator session...
-              </div>
-            ) : adminSession ? (
-              <AdminPanelView onNavigate={handleNavigate} />
-            ) : (
-              <AdminLoginView onBackToDashboard={() => handleNavigate('dashboard')} />
-            )
-          ) : isMaintenanceBlocked ? (
+          {isMaintenanceBlocked ? (
             <div className="min-h-[60vh] flex items-center justify-center px-4">
               <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-4">
                 <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
