@@ -172,8 +172,8 @@ function MainAppShell() {
         onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
-      {/* Main Container (offset on desktop by sidebar width) */}
-      <div className="lg:pl-64 flex flex-col flex-1 min-w-0">
+      {/* Main Container */}
+      <div className="flex flex-col flex-1 min-w-0">
         {/* Top Header */}
         <Header
           currentSection={currentSection}

@@ -6,7 +6,6 @@ import {
   Sparkles,
   Settings as SettingsIcon,
   Calendar,
-  Lock,
 } from 'lucide-react';
 import { NavSection } from '../types/index.ts';
 
@@ -22,7 +21,7 @@ export function Header({
   onNavigate,
 }: HeaderProps) {
   const { user, profile } = useAuth();
-  const { config, adminSession } = useSiteConfig();
+  const { config } = useSiteConfig();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +68,7 @@ export function Header({
             type="button"
             onClick={onToggleMobileMenu}
             aria-label="Toggle Navigation Menu"
-            className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -101,20 +100,8 @@ export function Header({
           <span className="whitespace-nowrap">{todayFormatted}</span>
         </div>
 
-        {/* Right: Quick Admin button (when signed in) + Account menu */}
+        {/* Right: Account menu */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {adminSession && currentSection !== 'admin' && (
-            <button
-              id="header-admin-quick-btn"
-              type="button"
-              onClick={() => onNavigate('admin')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Admin Panel</span>
-            </button>
-          )}
-
           <div className="relative" ref={menuRef}>
             <button
               id="account-profile-menu-btn"
@@ -194,24 +181,6 @@ export function Header({
                   >
                     <SettingsIcon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     <span>Preferences &amp; Settings</span>
-                  </button>
-
-                  <button
-                    id="header-menu-admin-btn"
-                    type="button"
-                    onClick={() => {
-                      onNavigate('admin');
-                      setMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-2.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <Lock className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                      <span>Admin Panel</span>
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      {adminSession ? 'Signed In' : 'Login'}
-                    </span>
                   </button>
                 </div>
               </div>
