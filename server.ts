@@ -766,10 +766,6 @@ const ADMIN_LOGS_FILE = path.join(DATA_DIR, 'admin-logs.json');
 const ADMIN_AUTH_FILE = path.join(DATA_DIR, 'admin-auth.json');
 const ADMIN_SECRET_FILE = path.join(DATA_DIR, 'admin-secret.key');
 
-const DEFAULT_ADMIN_EMAIL_SHA256 =
-  '7a644e06316a1a31356b74ea42df2c7a8b1227f0914f62ad49d838324ef1b5a8';
-const DEFAULT_ADMIN_PASS_SHA256 =
-  '60d8973013541a9f102b7dd00142153941c7f989c2fb210d230b4a3fadf9d16f';
 
 const DEFAULT_SERVER_SITE_CONFIG = {
   branding: {
@@ -988,10 +984,13 @@ function verifyAdminCredentials(emailInput: string, passwordInput: string): bool
   const cleanEmail = emailInput.trim().toLowerCase();
   const inputEmailHash = sha256(cleanEmail);
 
-  const expectedEmailHash = process.env.ADMIN_EMAIL
-    ? sha256(process.env.ADMIN_EMAIL.trim().toLowerCase())
-    : DEFAULT_ADMIN_EMAIL_SHA256;
+  // Legacy Express login is disabled unless an operator explicitly configures
+  // separate server credentials. The website admin login now uses Supabase Auth.
+  if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+    return false;
+  }
 
+  const expectedEmailHash = sha256(process.env.ADMIN_EMAIL.trim().toLowerCase());
   if (!safeEqualHex(inputEmailHash, expectedEmailHash)) {
     return false;
   }
@@ -1002,11 +1001,7 @@ function verifyAdminCredentials(emailInput: string, passwordInput: string): bool
     return safeEqualHex(derived, override.passwordHash);
   }
 
-  const expectedPassHash = process.env.ADMIN_PASSWORD
-    ? sha256(process.env.ADMIN_PASSWORD)
-    : DEFAULT_ADMIN_PASS_SHA256;
-
-  return safeEqualHex(sha256(passwordInput), expectedPassHash);
+  return safeEqualHex(sha256(passwordInput), sha256(process.env.ADMIN_PASSWORD));
 }
 
 function signAdminToken(email: string): { token: string; expiresAt: string } {
