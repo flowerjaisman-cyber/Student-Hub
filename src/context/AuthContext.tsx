@@ -1,18 +1,16 @@
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  ReactNode,
+  createContext, useContext, useEffect, useState, useCallback, ReactNode,
 } from 'react';
 import {
-  ensureUserProfile,
-  subscribeToUserProfile,
-  subscribeToUserSettings,
+  ensureUserProfile, subscribeToUserProfile, subscribeToUserSettings,
   updateUserSettings as updateUserSettingsInDb,
 } from '../services/userService.ts';
 import { UserProfile, UserSettings, AppearanceMode } from '../types/index.ts';
+import {
+  StudentSession, readStudentSession, storeStudentSession, signInStudent,
+  signUpStudent, getStudentUser, signOutStudent, refreshStudentSession,
+  updateStudentMetadata,
+} from '../lib/supabase.ts';
 
 export interface StudentAuthUser {
   uid: string;
@@ -27,185 +25,163 @@ interface AuthContextType {
   settings: UserSettings | null;
   loading: boolean;
   error: string | null;
-  signIn: () => Promise<boolean>;
+  signIn: (email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string, fullName: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   updateSettings: (updates: Partial<UserSettings>) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   clearError: () => void;
 }
 
-const DEFAULT_USER_PROFILE: UserProfile = {
-  uid: 'student_user',
-  displayName: 'Student',
-  email: 'student@studenthub.local',
-  photoURL: null,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
 const DEFAULT_USER_SETTINGS: UserSettings = {
-  appearance: 'system',
-  language: 'en',
-  compactView: false,
-  updatedAt: new Date().toISOString(),
+  appearance: 'system', language: 'en', compactView: false, updatedAt: new Date().toISOString(),
 };
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<StudentAuthUser>({
-    uid: DEFAULT_USER_PROFILE.uid,
-    displayName: DEFAULT_USER_PROFILE.displayName,
-    email: DEFAULT_USER_PROFILE.email,
-    photoURL: DEFAULT_USER_PROFILE.photoURL,
-  });
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
+  const [user, setUser] = useState<StudentAuthUser | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [session, setSession] = useState<StudentSession | null>(() => readStudentSession());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Apply theme to DOM
   useEffect(() => {
     const appearance: AppearanceMode = settings?.appearance || 'system';
     const root = document.documentElement;
-
-    const applySystemTheme = () => {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (isDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    };
-
-    if (appearance === 'dark') {
-      root.classList.add('dark');
-    } else if (appearance === 'light') {
-      root.classList.remove('dark');
-    } else {
+    const applySystemTheme = () => root.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (appearance === 'dark') root.classList.add('dark');
+    else if (appearance === 'light') root.classList.remove('dark');
+    else {
       applySystemTheme();
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const listener = () => applySystemTheme();
-      mediaQuery.addEventListener('change', listener);
-      return () => mediaQuery.removeEventListener('change', listener);
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      media.addEventListener('change', applySystemTheme);
+      return () => media.removeEventListener('change', applySystemTheme);
     }
   }, [settings?.appearance]);
 
-  // Initialize and subscribe to local user profile and settings
   useEffect(() => {
-    let unsubProfile: (() => void) | null = null;
-    let unsubSettings: (() => void) | null = null;
-
-    async function initUser() {
+    let active = true;
+    async function restore() {
       try {
-        const { profile: initProfile, settings: initSettings } =
-          await ensureUserProfile(user);
-        if (initProfile) {
-          setProfile(initProfile);
-          setUser({
-            uid: initProfile.uid,
-            displayName: initProfile.displayName,
-            email: initProfile.email,
-            photoURL: initProfile.photoURL,
-          });
+        let current = session;
+        if (current && current.expires_at && current.expires_at < Date.now() + 60_000) {
+          current = await refreshStudentSession(current);
+          if (active) setSession(current);
         }
-        if (initSettings) {
-          setSettings(initSettings);
-        }
-
-        unsubProfile = subscribeToUserProfile(user.uid, (p) => {
-          if (p) {
-            setProfile(p);
-            setUser({
-              uid: p.uid,
-              displayName: p.displayName,
-              email: p.email,
-              photoURL: p.photoURL,
-            });
-          }
-        });
-
-        unsubSettings = subscribeToUserSettings(user.uid, (s) => {
-          if (s) setSettings(s);
-        });
+        if (!current?.access_token) return;
+        const authUser = await getStudentUser(current.access_token);
+        if (!active) return;
+        const nextUser: StudentAuthUser = {
+          uid: authUser.id,
+          displayName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Student',
+          email: authUser.email || null,
+          photoURL: authUser.user_metadata?.avatar_url || null,
+        };
+        const initial = await ensureUserProfile(nextUser);
+        if (!active) return;
+        setUser(nextUser);
+        setProfile(initial.profile);
+        setSettings(initial.settings);
       } catch (err) {
-        console.error('Failed to init local student user:', err);
+        console.error('Student session restore failed:', err);
+        storeStudentSession(null);
+        if (active) { setSession(null); setUser(null); }
+      } finally {
+        if (active) setLoading(false);
       }
     }
+    restore();
+    return () => { active = false; };
+  // Initial session restoration only; auth actions update the state explicitly.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    initUser();
+  useEffect(() => {
+    if (!user?.uid) { setProfile(null); setSettings(DEFAULT_USER_SETTINGS); return; }
+    let unsubProfile: (() => void) | undefined;
+    let unsubSettings: (() => void) | undefined;
+    ensureUserProfile(user).then(({ profile: p, settings: s }) => {
+      setProfile(p); setSettings(s);
+      unsubProfile = subscribeToUserProfile(user.uid, (next) => { if (next) setProfile(next); });
+      unsubSettings = subscribeToUserSettings(user.uid, (next) => { if (next) setSettings(next); });
+    }).catch((err) => console.error('Student profile load failed:', err));
+    return () => { unsubProfile?.(); unsubSettings?.(); };
+  }, [user?.uid]);
 
-    return () => {
-      if (unsubProfile) unsubProfile();
-      if (unsubSettings) unsubSettings();
-    };
-  }, [user.uid]);
-
-  const handleSignIn = useCallback(async (): Promise<boolean> => {
+  const handleSignIn = useCallback(async (email: string, password: string) => {
     setError(null);
-    return true;
+    try {
+      const next = await signInStudent(email, password);
+      const authUser = next.user || await getStudentUser(next.access_token);
+      const nextUser = {
+        uid: authUser.id,
+        displayName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Student',
+        email: authUser.email || null,
+        photoURL: authUser.user_metadata?.avatar_url || null,
+      };
+      const initial = await ensureUserProfile(nextUser);
+      setSession(next); setUser(nextUser); setProfile(initial.profile); setSettings(initial.settings);
+      return true;
+    } catch (err: any) {
+      setError(err?.message || 'Unable to sign in.');
+      return false;
+    }
   }, []);
 
-  const handleSignOut = useCallback(async (): Promise<void> => {
-    // Free workspace: resets to default without locking out
-    setProfile(DEFAULT_USER_PROFILE);
-    setUser({
-      uid: DEFAULT_USER_PROFILE.uid,
-      displayName: DEFAULT_USER_PROFILE.displayName,
-      email: DEFAULT_USER_PROFILE.email,
-      photoURL: null,
-    });
+  const handleSignUp = useCallback(async (email: string, password: string, fullName: string) => {
+    setError(null);
+    try {
+      const result = await signUpStudent(email, password, fullName);
+      if (!result.session) return false;
+      const authUser = result.session.user || await getStudentUser(result.session.access_token);
+      const nextUser = {
+        uid: authUser.id, displayName: fullName, email: authUser.email || email,
+        photoURL: authUser.user_metadata?.avatar_url || null,
+      };
+      const initial = await ensureUserProfile(nextUser);
+      setSession(result.session); setUser(nextUser); setProfile(initial.profile); setSettings(initial.settings);
+      return true;
+    } catch (err: any) {
+      setError(err?.message || 'Unable to create account.');
+      return false;
+    }
   }, []);
 
-  const handleUpdateSettings = useCallback(
-    async (updates: Partial<UserSettings>): Promise<void> => {
-      try {
-        await updateUserSettingsInDb(user.uid, updates);
-        setSettings((prev) => ({ ...prev, ...updates }));
-      } catch (err) {
-        console.error('Error updating settings:', err);
-        throw err;
-      }
-    },
-    [user.uid]
-  );
+  const handleSignOut = useCallback(async () => {
+    await signOutStudent(session?.access_token);
+    setSession(null); setUser(null); setProfile(null); setSettings(DEFAULT_USER_SETTINGS);
+  }, [session?.access_token]);
 
-  const handleUpdateProfile = useCallback(
-    async (updates: Partial<UserProfile>): Promise<void> => {
-      try {
-        const updated = { ...profile, ...updates, updatedAt: new Date().toISOString() };
-        setProfile(updated);
-        setUser({
-          uid: updated.uid,
-          displayName: updated.displayName,
-          email: updated.email,
-          photoURL: updated.photoURL,
-        });
-      } catch (err) {
-        console.error('Error updating profile:', err);
-        throw err;
-      }
-    },
-    [profile]
-  );
+  const handleUpdateSettings = useCallback(async (updates: Partial<UserSettings>) => {
+    if (!user) throw new Error('Please sign in first.');
+    await updateUserSettingsInDb(user.uid, updates);
+    setSettings((prev) => ({ ...prev, ...updates, updatedAt: new Date().toISOString() }));
+  }, [user?.uid]);
+
+  const handleUpdateProfile = useCallback(async (updates: Partial<UserProfile>) => {
+    if (!user || !session?.access_token) throw new Error('Please sign in first.');
+    const metadata: Record<string, unknown> = {};
+    if (updates.displayName !== undefined) metadata.full_name = updates.displayName;
+    if (updates.photoURL !== undefined) metadata.avatar_url = updates.photoURL;
+    const authUser = await updateStudentMetadata(session.access_token, metadata);
+    const next = {
+      ...user,
+      displayName: authUser.user_metadata?.full_name ?? updates.displayName ?? user.displayName,
+      photoURL: authUser.user_metadata?.avatar_url ?? updates.photoURL ?? user.photoURL,
+    };
+    const nextProfile = { ...(profile as UserProfile), ...updates, ...next, updatedAt: new Date().toISOString() };
+    setUser(next); setProfile(nextProfile);
+  }, [user, profile, session?.access_token]);
 
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        settings,
-        loading,
-        error,
-        signIn: handleSignIn,
-        signOut: handleSignOut,
-        updateSettings: handleUpdateSettings,
-        updateProfile: handleUpdateProfile,
-        clearError,
-      }}
-    >
+    <AuthContext.Provider value={{
+      user, profile, settings, loading, error, signIn: handleSignIn, signUp: handleSignUp,
+      signOut: handleSignOut, updateSettings: handleUpdateSettings,
+      updateProfile: handleUpdateProfile, clearError,
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -213,8 +189,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
