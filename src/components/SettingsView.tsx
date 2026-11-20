@@ -114,7 +114,7 @@ export function SettingsView() {
           Settings &amp; Preferences
         </h1>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Manage your student profile, visual preferences, and local workspace storage.
+          Manage your student profile, visual preferences, and synced workspace data.
         </p>
       </div>
 
@@ -169,7 +169,7 @@ export function SettingsView() {
             <p className="text-xs text-slate-600 dark:text-slate-400">{email}</p>
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[11px] font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Free Local Workspace Active
+              Secure Student Account Active
             </span>
           </div>
         </div>
