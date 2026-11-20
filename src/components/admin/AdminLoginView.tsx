@@ -78,7 +78,7 @@ export function AdminLoginView({ onBackToDashboard }: AdminLoginViewProps) {
               htmlFor="admin-email-input"
               className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
             >
-              Username or Email
+              Email
             </label>
             <input
               id="admin-email-input"
@@ -89,7 +89,7 @@ export function AdminLoginView({ onBackToDashboard }: AdminLoginViewProps) {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
+              placeholder="you@example.com"
               className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-base sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
               required
             />
