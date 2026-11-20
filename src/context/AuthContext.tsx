@@ -6,6 +6,7 @@ import {
   updateUserSettings as updateUserSettingsInDb,
 } from '../services/userService.ts';
 import { UserProfile, UserSettings, AppearanceMode } from '../types/index.ts';
+import { localDb } from '../lib/localDb.ts';
 import {
   StudentSession, readStudentSession, storeStudentSession, signInStudent,
   signUpStudent, getStudentUser, signOutStudent, refreshStudentSession,
@@ -171,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       photoURL: authUser.user_metadata?.avatar_url ?? updates.photoURL ?? user.photoURL,
     };
     const nextProfile = { ...(profile as UserProfile), ...updates, ...next, updatedAt: new Date().toISOString() };
+    localDb.saveItem('profile', user.uid, { ...nextProfile, id: 'main' });
     setUser(next); setProfile(nextProfile);
   }, [user, profile, session?.access_token]);
 
