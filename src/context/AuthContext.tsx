@@ -6,8 +6,6 @@ import {
   updateUserSettings as updateUserSettingsInDb,
 } from '../services/userService.ts';
 import { UserProfile, UserSettings, AppearanceMode } from '../types/index.ts';
-import {
-} from '../lib/supabase.ts';
 
 export interface StudentAuthUser {
   uid: string;
