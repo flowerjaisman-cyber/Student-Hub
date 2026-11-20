@@ -1,3 +1,5 @@
+import { readStudentSession, cloudListRecords, cloudUpsertRecord, cloudDeleteRecord } from './supabase.ts';
+
 /**
  * StudentHub Local Database Engine
  * High-performance, offline-capable reactive store using localStorage and browser IndexedDB.
@@ -201,6 +203,12 @@ class LocalDatabase {
     }
 
     this.saveCollection(collection, items, uid);
+    const session = readStudentSession();
+    if (session?.user?.id === uid) {
+      void cloudUpsertRecord(session.access_token, uid, collection, item).catch((err) =>
+        console.warn('Cloud save failed; local copy retained:', err)
+      );
+    }
   }
 
   public deleteItem(
@@ -211,6 +219,12 @@ class LocalDatabase {
     const items = this.loadCollection<any>(collection, uid);
     const filtered = items.filter((i) => i.id !== id);
     this.saveCollection(collection, filtered, uid);
+    const session = readStudentSession();
+    if (session?.user?.id === uid) {
+      void cloudDeleteRecord(session.access_token, uid, collection, id).catch((err) =>
+        console.warn('Cloud delete failed:', err)
+      );
+    }
   }
 
   public batchSaveItems<T extends { id: string }>(
@@ -269,6 +283,21 @@ class LocalDatabase {
         console.error('Initial subscriber error:', err);
       }
     }, 0);
+
+    // Pull this signed-in student's records from Supabase and merge them into the
+    // local cache. RLS independently enforces ownership on every database request.
+    const session = readStudentSession();
+    if (session?.user?.id === uid) {
+      void cloudListRecords(session.access_token, uid, collection).then((rows: Array<{item_id:string; payload:T}>) => {
+        if (!Array.isArray(rows) || rows.length === 0) return;
+        const existing = this.loadCollection<any>(collection, uid);
+        const byId = new Map<string, any>(existing.map((item) => [item.id, item]));
+        rows.forEach((row) => {
+          if (row?.payload && (row.payload as any).id) byId.set((row.payload as any).id, row.payload);
+        });
+        this.saveCollection(collection, Array.from(byId.values()), uid);
+      }).catch((err) => console.warn('Cloud sync unavailable; local data remains available:', err));
+    }
 
     return () => {
       const subs = this.subscribers.get(key);
