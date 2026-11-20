@@ -6,11 +6,7 @@ import {
   updateUserSettings as updateUserSettingsInDb,
 } from '../services/userService.ts';
 import { UserProfile, UserSettings, AppearanceMode } from '../types/index.ts';
-import { localDb } from '../lib/localDb.ts';
 import {
-  StudentSession, readStudentSession, storeStudentSession, signInStudent,
-  signUpStudent, getStudentUser, signOutStudent, refreshStudentSession,
-  updateStudentMetadata,
 } from '../lib/supabase.ts';
 
 export interface StudentAuthUser {
@@ -40,11 +36,10 @@ const DEFAULT_USER_SETTINGS: UserSettings = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<StudentAuthUser | null>(null);
+  const [user, setUser] = useState<StudentAuthUser | null>({ uid: 'student_user', displayName: 'Student', email: null, photoURL: null });
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
-  const [session, setSession] = useState<StudentSession | null>(() => readStudentSession());
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,59 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [settings?.appearance]);
 
   useEffect(() => {
-    let active = true;
-    async function restore() {
-      try {
-        let current = session;
-        if (current && current.expires_at && current.expires_at < Date.now() + 60_000) {
-          current = await refreshStudentSession(current);
-          if (active) setSession(current);
-        }
-        if (!current?.access_token) return;
-        const authUser = await getStudentUser(current.access_token);
-        if (!active) return;
-        const nextUser: StudentAuthUser = {
-          uid: authUser.id,
-          displayName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Student',
-          email: authUser.email || null,
-          photoURL: authUser.user_metadata?.avatar_url || null,
-        };
-        const initial = await ensureUserProfile(nextUser);
-        if (!active) return;
-        setUser(nextUser);
-        setProfile(initial.profile);
-        setSettings(initial.settings);
-      } catch (err) {
-        console.error('Student session restore failed:', err);
-        storeStudentSession(null);
-        if (active) { setSession(null); setUser(null); }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    restore();
-    return () => { active = false; };
-  // Initial session restoration only; auth actions update the state explicitly.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!session?.refresh_token) return;
-    const refresh = async () => {
-      try {
-        const next = await refreshStudentSession(session);
-        setSession(next);
-      } catch (err) {
-        console.warn('Student session refresh failed; signing out:', err);
-        await signOutStudent(session.access_token);
-        setSession(null); setUser(null); setProfile(null);
-      }
-    };
-    const timer = window.setInterval(refresh, 45 * 60 * 1000);
-    return () => window.clearInterval(timer);
-  }, [session?.refresh_token]);
-
-  useEffect(() => {
     if (!user?.uid) { setProfile(null); setSettings(DEFAULT_USER_SETTINGS); return; }
     let unsubProfile: (() => void) | undefined;
     let unsubSettings: (() => void) | undefined;
@@ -126,49 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { unsubProfile?.(); unsubSettings?.(); };
   }, [user?.uid]);
 
-  const handleSignIn = useCallback(async (email: string, password: string) => {
-    setError(null);
-    try {
-      const next = await signInStudent(email, password);
-      const authUser = next.user || await getStudentUser(next.access_token);
-      const nextUser = {
-        uid: authUser.id,
-        displayName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Student',
-        email: authUser.email || null,
-        photoURL: authUser.user_metadata?.avatar_url || null,
-      };
-      const initial = await ensureUserProfile(nextUser);
-      setSession(next); setUser(nextUser); setProfile(initial.profile); setSettings(initial.settings);
-      return true;
-    } catch (err: any) {
-      setError(err?.message || 'Unable to sign in.');
-      return false;
-    }
-  }, []);
-
-  const handleSignUp = useCallback(async (email: string, password: string, fullName: string) => {
-    setError(null);
-    try {
-      const result = await signUpStudent(email, password, fullName);
-      if (!result.session) return false;
-      const authUser = result.session.user || await getStudentUser(result.session.access_token);
-      const nextUser = {
-        uid: authUser.id, displayName: fullName, email: authUser.email || email,
-        photoURL: authUser.user_metadata?.avatar_url || null,
-      };
-      const initial = await ensureUserProfile(nextUser);
-      setSession(result.session); setUser(nextUser); setProfile(initial.profile); setSettings(initial.settings);
-      return true;
-    } catch (err: any) {
-      setError(err?.message || 'Unable to create account.');
-      return false;
-    }
-  }, []);
-
+  const handleSignIn = useCallback(async () => true, []);
+  const handleSignUp = useCallback(async () => true, []);
   const handleSignOut = useCallback(async () => {
-    await signOutStudent(session?.access_token);
-    setSession(null); setUser(null); setProfile(null); setSettings(DEFAULT_USER_SETTINGS);
-  }, [session?.access_token]);
+    // StudentHub is open access; there is no student session to sign out of.
+  }, []);
 
   const handleUpdateSettings = useCallback(async (updates: Partial<UserSettings>) => {
     if (!user) throw new Error('Please sign in first.');
@@ -177,20 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.uid]);
 
   const handleUpdateProfile = useCallback(async (updates: Partial<UserProfile>) => {
-    if (!user || !session?.access_token) throw new Error('Please sign in first.');
-    const metadata: Record<string, unknown> = {};
-    if (updates.displayName !== undefined) metadata.full_name = updates.displayName;
-    if (updates.photoURL !== undefined) metadata.avatar_url = updates.photoURL;
-    const authUser = await updateStudentMetadata(session.access_token, metadata);
-    const next = {
-      ...user,
-      displayName: authUser.user_metadata?.full_name ?? updates.displayName ?? user.displayName,
-      photoURL: authUser.user_metadata?.avatar_url ?? updates.photoURL ?? user.photoURL,
-    };
-    const nextProfile = { ...(profile as UserProfile), ...updates, ...next, updatedAt: new Date().toISOString() };
-    localDb.saveItem('profile', user.uid, { ...nextProfile, id: 'main' });
-    setUser(next); setProfile(nextProfile);
-  }, [user, profile, session?.access_token]);
+    if (!user) return;
+    const nextProfile = { ...(profile as UserProfile), ...updates, updatedAt: new Date().toISOString() };
+    setUser((prev) => prev ? {
+      ...prev,
+      displayName: updates.displayName ?? prev.displayName,
+      photoURL: updates.photoURL ?? prev.photoURL,
+    } : prev);
+    setProfile(nextProfile);
+  }, [user, profile]);
 
   const clearError = useCallback(() => setError(null), []);
 
