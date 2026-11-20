@@ -6,7 +6,6 @@ import {
   Sparkles,
   Settings as SettingsIcon,
   Calendar,
-  LogOut,
 } from 'lucide-react';
 import { NavSection } from '../types/index.ts';
 
@@ -21,7 +20,7 @@ export function Header({
   currentSection,
   onNavigate,
 }: HeaderProps) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const { config } = useSiteConfig();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -172,17 +171,6 @@ export function Header({
                 </div>
 
                 <div className="py-1">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setMenuOpen(false);
-                      await signOut();
-                    }}
-                    className="w-full px-4 py-2.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign out</span>
-                  </button>
                   <button
                     type="button"
                     onClick={() => {

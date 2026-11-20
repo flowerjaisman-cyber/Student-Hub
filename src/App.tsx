@@ -19,7 +19,6 @@ import { StudyPlannerView, StudyTabType } from './components/study/StudyPlannerV
 import { AIStudyView } from './components/ai-study/AIStudyView.tsx';
 import { AdminLoginView } from './components/admin/AdminLoginView.tsx';
 import { AdminPanelView } from './components/admin/AdminPanelView.tsx';
-import { StudentAuthView } from './components/StudentAuthView.tsx';
 import { Lock, Wrench, ArrowLeft } from 'lucide-react';
 import {
   NavSection,
@@ -148,11 +147,6 @@ function MainAppShell() {
 
   if (loading) {
     return <LoadingScreen />;
-  }
-
-  // Keep the administrator route available to the separate Supabase-admin login.
-  if (!user && typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin')) {
-    return <StudentAuthView />;
   }
 
   const activeUserId = user?.uid || 'student_user';
