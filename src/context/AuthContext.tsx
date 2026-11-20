@@ -99,6 +99,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!session?.refresh_token) return;
+    const refresh = async () => {
+      try {
+        const next = await refreshStudentSession(session);
+        setSession(next);
+      } catch (err) {
+        console.warn('Student session refresh failed; signing out:', err);
+        await signOutStudent(session.access_token);
+        setSession(null); setUser(null); setProfile(null);
+      }
+    };
+    const timer = window.setInterval(refresh, 45 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [session?.refresh_token]);
+
+  useEffect(() => {
     if (!user?.uid) { setProfile(null); setSettings(DEFAULT_USER_SETTINGS); return; }
     let unsubProfile: (() => void) | undefined;
     let unsubSettings: (() => void) | undefined;
