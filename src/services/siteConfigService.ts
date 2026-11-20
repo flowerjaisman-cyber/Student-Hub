@@ -233,6 +233,39 @@ export async function fetchLiveSiteConfig(): Promise<SiteConfig> {
   return readCachedSiteConfig();
 }
 
+export async function adminLoginRequest(
+  email: string,
+  password: string
+): Promise<AdminSession> {
+  const cleanEmail = email.trim().toLowerCase();
+  const response = await supabaseRequest('/auth/v1/token?grant_type=password', {
+    method: 'POST',
+    body: JSON.stringify({ email: cleanEmail, password }),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.msg || data.message || data.error_description || 'Invalid email or password.');
+  }
+  if (!isAdminUser(data.user)) {
+    await supabaseRequest('/auth/v1/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${data.access_token}` },
+    });
+    throw new Error('This Supabase account is not an administrator.');
+  }
+
+  const session: AdminSession = {
+    token: data.access_token,
+    refreshToken: data.refresh_token,
+    email: data.user.email || cleanEmail,
+    expiresAt: new Date(Date.now() + (Number(data.expires_in) || 3600) * 1000).toISOString(),
+    mode: 'supabase',
+  };
+  storeAdminSession(session);
+  return session;
+}
+
 export async function verifyAdminSessionRequest(
   session: AdminSession
 ): Promise<boolean> {
@@ -436,10 +469,11 @@ export async function changeAdminPasswordRequest(
     if (!reauthenticated.ok) {
       throw new Error('Current password is incorrect.');
     }
+    const authData = await reauthenticated.json();
 
     const response = await supabaseRequest('/auth/v1/user', {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${session.token}` },
+      headers: { Authorization: `Bearer ${authData.access_token}` },
       body: JSON.stringify({ password: newPassword }),
     });
     if (!response.ok) {
