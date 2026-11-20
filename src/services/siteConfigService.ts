@@ -197,14 +197,10 @@ export function storeAdminSession(session: AdminSession | null): void {
 }
 
 async function supabaseRequest(path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`${SUPABASE_URL}${path}`, {
-    ...init,
-    headers: {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
-  });
+  const headers = new Headers(init.headers);
+  headers.set('apikey', SUPABASE_PUBLISHABLE_KEY);
+  headers.set('Content-Type', 'application/json');
+  return fetch(`${SUPABASE_URL}${path}`, { ...init, headers });
 }
 
 async function getSupabaseUser(accessToken: string): Promise<any | null> {
