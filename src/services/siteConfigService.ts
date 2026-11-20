@@ -7,14 +7,11 @@ import {
 export const SITE_CONFIG_STORAGE_KEY = 'studenthub_site_config_v1';
 export const ADMIN_SESSION_STORAGE_KEY = 'studenthub_admin_session_v1';
 export const ADMIN_LOGS_STORAGE_KEY = 'studenthub_admin_logs_v1';
-export const ADMIN_CUSTOM_PASS_HASH_KEY = 'studenthub_admin_pass_hash_v1';
 export const SITE_CONFIG_CHANNEL = 'studenthub_site_config_channel';
 
-// SHA-256 digests used strictly when running without a Node backend (e.g. static CDN fallback)
-const DEFAULT_ADMIN_EMAIL_SHA256 =
-  '7a644e06316a1a31356b74ea42df2c7a8b1227f0914f62ad49d838324ef1b5a8';
-const DEFAULT_ADMIN_PASS_SHA256 =
-  '60d8973013541a9f102b7dd00142153941c7f989c2fb210d230b4a3fadf9d16f';
+// Supabase publishable credentials are safe to include in a browser client.
+const SUPABASE_URL = 'https://yssoddwbmqthhaqfvsku.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ksL4bmddl0wPEEvE0vBNuQ_KUst0UiH';
 
 export const DEFAULT_MODULES: DashboardModuleConfig[] = [
   {
@@ -169,7 +166,8 @@ export interface AdminSession {
   token: string;
   email: string;
   expiresAt: string;
-  mode: 'server' | 'local';
+  mode: 'server' | 'supabase';
+  refreshToken?: string;
 }
 
 export function readStoredAdminSession(): AdminSession | null {
@@ -198,11 +196,27 @@ export function storeAdminSession(session: AdminSession | null): void {
   }
 }
 
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+async function supabaseRequest(path: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(`${SUPABASE_URL}${path}`, {
+    ...init,
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      'Content-Type': 'application/json',
+      ...(init.headers || {}),
+    },
+  });
+}
+
+async function getSupabaseUser(accessToken: string): Promise<any | null> {
+  const response = await supabaseRequest('/auth/v1/user', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) return null;
+  return response.json();
+}
+
+function isAdminUser(user: any): boolean {
+  return user?.app_metadata?.role === 'admin';
 }
 
 export async function fetchLiveSiteConfig(): Promise<SiteConfig> {
@@ -223,87 +237,63 @@ export async function fetchLiveSiteConfig(): Promise<SiteConfig> {
   return readCachedSiteConfig();
 }
 
-export async function adminLoginRequest(
-  email: string,
-  password: string
-): Promise<AdminSession> {
-  const cleanEmail = email.trim().toLowerCase();
-
-  try {
-    const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: cleanEmail, password }),
-    });
-
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Invalid username or password.');
-      }
-      const session: AdminSession = {
-        token: data.token,
-        email: data.admin?.email || cleanEmail,
-        expiresAt: data.expiresAt,
-        mode: 'server',
-      };
-      storeAdminSession(session);
-      return session;
-    }
-  } catch (err: any) {
-    // Re-throw explicit authentication errors from server
-    if (err?.message && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError')) {
-      throw err;
-    }
-  }
-
-  // Static/offline fallback when Express backend is absent
-  const emailHash = await sha256Hex(cleanEmail);
-  const passHash = await sha256Hex(password);
-  const storedPassHash = localStorage.getItem(ADMIN_CUSTOM_PASS_HASH_KEY) || DEFAULT_ADMIN_PASS_SHA256;
-
-  if (emailHash !== DEFAULT_ADMIN_EMAIL_SHA256 || passHash !== storedPassHash) {
-    throw new Error('Invalid username or password.');
-  }
-
-  const session: AdminSession = {
-    token: `local_${crypto.randomUUID()}`,
-    email: cleanEmail,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    mode: 'local',
-  };
-  storeAdminSession(session);
-  return session;
-}
-
 export async function verifyAdminSessionRequest(
   session: AdminSession
 ): Promise<boolean> {
-  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+  if (session.mode === 'server') {
+    if (new Date(session.expiresAt).getTime() <= Date.now()) {
+      storeAdminSession(null);
+      return false;
+    }
+    try {
+      const res = await fetch('/api/admin/session', {
+        headers: { Authorization: `Bearer ${session.token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  if (session.mode !== 'supabase') {
     storeAdminSession(null);
     return false;
   }
 
-  if (session.mode === 'local') {
-    return true;
-  }
-
   try {
-    const res = await fetch('/api/admin/session', {
-      headers: { Authorization: `Bearer ${session.token}` },
-    });
-    if (res.status === 401 || res.status === 403) {
+    let activeSession = session;
+    let user = await getSupabaseUser(activeSession.token);
+
+    if (!user && activeSession.refreshToken) {
+      const refreshed = await supabaseRequest('/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        body: JSON.stringify({ refresh_token: activeSession.refreshToken }),
+      });
+      if (!refreshed.ok) {
+        storeAdminSession(null);
+        return false;
+      }
+      const data = await refreshed.json();
+      user = data.user;
+      activeSession = {
+        ...activeSession,
+        token: data.access_token,
+        refreshToken: data.refresh_token || activeSession.refreshToken,
+        email: data.user?.email || activeSession.email,
+        expiresAt: new Date(Date.now() + (Number(data.expires_in) || 3600) * 1000).toISOString(),
+      };
+      storeAdminSession(activeSession);
+    }
+
+    if (!isAdminUser(user)) {
       storeAdminSession(null);
       return false;
     }
-    if (res.ok) {
-      return true;
-    }
+    return true;
   } catch {
-    // Keep session valid if temporarily offline
+    // Fail closed if the auth server cannot verify the stored administrator session.
+    return false;
   }
-  return true;
 }
 
 function appendLocalAdminLog(entry: AdminChangeLogEntry): AdminChangeLogEntry[] {
@@ -438,8 +428,29 @@ export async function changeAdminPasswordRequest(
   currentPassword: string,
   newPassword: string
 ): Promise<void> {
-  if (newPassword.length < 6) {
-    throw new Error('New password must be at least 6 characters.');
+  if (newPassword.length < 8) {
+    throw new Error('New password must be at least 8 characters.');
+  }
+
+  if (session.mode === 'supabase') {
+    const reauthenticated = await supabaseRequest('/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      body: JSON.stringify({ email: session.email, password: currentPassword }),
+    });
+    if (!reauthenticated.ok) {
+      throw new Error('Current password is incorrect.');
+    }
+
+    const response = await supabaseRequest('/auth/v1/user', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.msg || data.message || 'Could not update Supabase password.');
+    }
+    return;
   }
 
   if (session.mode === 'server') {
@@ -451,21 +462,10 @@ export async function changeAdminPasswordRequest(
       },
       body: JSON.stringify({ currentPassword, newPassword }),
     });
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Could not update admin password.');
-      }
-      return;
-    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Could not update admin password.');
+    return;
   }
 
-  const currentHash = await sha256Hex(currentPassword);
-  const storedHash = localStorage.getItem(ADMIN_CUSTOM_PASS_HASH_KEY) || DEFAULT_ADMIN_PASS_SHA256;
-  if (currentHash !== storedHash) {
-    throw new Error('Current password is incorrect.');
-  }
-  const nextHash = await sha256Hex(newPassword);
-  localStorage.setItem(ADMIN_CUSTOM_PASS_HASH_KEY, nextHash);
+  throw new Error('Unsupported administrator authentication method.');
 }
