@@ -1,0 +1,19 @@
+import { useState } from 'react';
+import { FileText, Printer, Sparkles } from 'lucide-react';
+
+export function CareerBuilderView(){
+ const [data,setData]=useState({name:'',email:'',phone:'',location:'',role:'',summary:'',education:'',experience:'',skills:'',projects:''});
+ const update=(key:keyof typeof data,value:string)=>setData(d=>({...d,[key]:value}));
+ const field='w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-sm';
+ const sections:[keyof typeof data,string,string][]=[['name','Full name','e.g. Alex Morgan'],['email','Email','name@example.com'],['phone','Phone','+92 ...'],['location','City / Country','Lahore, Pakistan'],['role','Target role','Junior Software Developer'],['summary','Professional summary','2–3 lines about your strengths'],['education','Education','Degree, institution, dates and achievements'],['experience','Experience','Role, organization, dates and key achievements'],['skills','Skills','JavaScript, teamwork, communication...'],['projects','Projects & certifications','Project name, what you built, certificates']];
+ return <div className="max-w-6xl mx-auto space-y-6 pb-12 print:max-w-none">
+  <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 print:hidden"><div><p className="text-xs font-semibold text-indigo-600">CAREER TOOLKIT</p><h1 className="text-2xl sm:text-3xl font-extrabold mt-1">Career &amp; CV Builder</h1><p className="text-sm text-slate-500 mt-1">Create a clean, professional student CV and print it to PDF.</p></div><button onClick={()=>window.print()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white"><Printer className="w-4 h-4"/> Print / Save PDF</button></header>
+  <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] gap-5 print:block">
+   <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4 print:hidden"><h2 className="font-bold flex items-center gap-2"><Sparkles className="w-4 h-4"/> Your CV details</h2>{sections.map(([key,label,placeholder])=><label key={key} className="block space-y-1.5"><span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{label}</span>{['summary','education','experience','skills','projects'].includes(key)?<textarea className={field+' min-h-24'} value={data[key]} onChange={e=>update(key,e.target.value)} placeholder={placeholder}/>:<input className={field} value={data[key]} onChange={e=>update(key,e.target.value)} placeholder={placeholder}/>}</label>)}</section>
+   <section id="cv-preview" className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white text-slate-900 p-7 sm:p-9 shadow-sm min-h-[700px] print:border-0 print:shadow-none print:min-h-0"><div className="border-b-2 border-indigo-600 pb-5"><h2 className="text-3xl font-extrabold">{data.name||'Your Name'}</h2><p className="text-indigo-700 font-semibold mt-1">{data.role||'Target Position'}</p><p className="text-xs text-slate-500 mt-3">{[data.email,data.phone,data.location].filter(Boolean).join('  •  ')||'Email • Phone • Location'}</p></div>
+    {([['summary','PROFILE'],['education','EDUCATION'],['experience','EXPERIENCE'],['skills','SKILLS'],['projects','PROJECTS & CERTIFICATIONS']] as [keyof typeof data,string][]).map(([key,label])=><div key={key} className="mt-6"><h3 className="text-xs font-extrabold tracking-widest text-indigo-700 border-b border-slate-200 pb-2">{label}</h3><p className="text-sm leading-6 whitespace-pre-wrap mt-2">{data[key]||'Add your information in the form to build this section.'}</p></div>)}
+   </section>
+  </div>
+  <p className="text-xs text-slate-500 print:hidden">Your CV details are not uploaded. Use Print / Save PDF and choose “Save as PDF” in your browser.</p>
+ </div>;
+}
