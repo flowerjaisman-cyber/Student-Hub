@@ -17,6 +17,10 @@ import { WritingToolsView } from './components/writing-tools/WritingToolsView.ts
 import { CalculatorsView } from './components/calculators/CalculatorsView.tsx';
 import { StudyPlannerView, StudyTabType } from './components/study/StudyPlannerView.tsx';
 import { AIStudyView } from './components/ai-study/AIStudyView.tsx';
+import { NotesLibraryView } from './components/NotesLibraryView.tsx';
+import { SemesterResultsView } from './components/SemesterResultsView.tsx';
+import { ReminderCenterView } from './components/ReminderCenterView.tsx';
+import { CareerBuilderView } from './components/CareerBuilderView.tsx';
 import { AdminLoginView } from './components/admin/AdminLoginView.tsx';
 import { AdminPanelView } from './components/admin/AdminPanelView.tsx';
 import { Lock, Wrench, ArrowLeft } from 'lucide-react';
@@ -61,6 +65,10 @@ function MainAppShell() {
     if (path === '/study-planner' || path === '/study-tools' || path.startsWith('/study-planner/')) return { section: 'study-tools', tab: 'today' };
     if (path === '/calculators') return { section: 'calculators' };
     if (path === '/image-tools') return { section: 'image-tools' };
+    if (path === '/notes-library') return { section: 'notes-library' };
+    if (path === '/semester-results') return { section: 'semester-results' };
+    if (path === '/reminders') return { section: 'reminders' };
+    if (path === '/career-builder') return { section: 'career-builder' };
     if (path === '/settings') return { section: 'settings' };
     return { section: 'dashboard' };
   };
@@ -262,6 +270,14 @@ function MainAppShell() {
 
               {currentSection === 'settings' && <SettingsView />}
 
+              {currentSection === 'notes-library' && <NotesLibraryView />}
+
+              {currentSection === 'semester-results' && <SemesterResultsView />}
+
+              {currentSection === 'reminders' && <ReminderCenterView />}
+
+              {currentSection === 'career-builder' && <CareerBuilderView />}
+
               {currentSection === 'image-tools' && <ImageToolsView />}
 
               {currentSection === 'writing-tools' && <WritingToolsView />}
@@ -273,6 +289,10 @@ function MainAppShell() {
               {currentSection !== 'dashboard' &&
                 currentSection !== 'ai-study' &&
                 currentSection !== 'settings' &&
+                currentSection !== 'notes-library' &&
+                currentSection !== 'semester-results' &&
+                currentSection !== 'reminders' &&
+                currentSection !== 'career-builder' &&
                 currentSection !== 'image-tools' &&
                 currentSection !== 'writing-tools' &&
                 currentSection !== 'calculators' &&
