@@ -9,6 +9,10 @@ import {
   X,
   ShieldCheck,
   Lock,
+  BookOpen,
+  Award,
+  Bell,
+  BriefcaseBusiness,
 } from 'lucide-react';
 import { NavSection, ConfigurableModuleId } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -63,6 +67,10 @@ export function Sidebar({
   }> = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ...activeModuleItems,
+    { id: 'notes-library', label: 'Notes & PDF Library', icon: BookOpen },
+    { id: 'semester-results', label: 'Semester & Results', icon: Award },
+    { id: 'reminders', label: 'Reminder Center', icon: Bell },
+    { id: 'career-builder', label: 'Career & CV Builder', icon: BriefcaseBusiness },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
