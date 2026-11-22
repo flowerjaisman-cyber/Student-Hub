@@ -103,6 +103,10 @@ export type NavSection =
   | 'calculators'
   | 'study-tools'
   | 'ai-study'
+  | 'notes-library'
+  | 'semester-results'
+  | 'reminders'
+  | 'career-builder'
   | 'settings'
   | 'admin';
 
