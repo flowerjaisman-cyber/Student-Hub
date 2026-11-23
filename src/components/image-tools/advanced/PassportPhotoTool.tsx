@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   ImageMetadata,
   downloadBlob,
@@ -265,7 +265,7 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
     }
   };
 
-  const handlePreviewPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePreviewPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
     dragRef.current = {
       pointerId: event.pointerId,
