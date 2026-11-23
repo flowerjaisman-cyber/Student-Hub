@@ -41,9 +41,11 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
   const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff');
   const [showFaceGuide, setShowFaceGuide] = useState<boolean>(true);
 
-  // Crop box state (% from 0 to 100)
-  const [cropCenterY, setCropCenterY] = useState<number>(45); // center on head/face
-  const [cropZoom, setCropZoom] = useState<number>(1.2); // zoom level
+  // Crop position is controlled on both axes (0–100%) and can be dragged in the preview.
+  const [cropCenterX, setCropCenterX] = useState<number>(50);
+  const [cropCenterY, setCropCenterY] = useState<number>(45);
+  const [cropZoom, setCropZoom] = useState<number>(1.2);
+  const dragRef = useRef<{ pointerId: number; x: number; y: number; centerX: number; centerY: number } | null>(null);
 
   // Single photo result
   const [singlePhotoBlob, setSinglePhotoBlob] = useState<Blob | null>(null);
@@ -104,13 +106,14 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
     cropW = Math.min(img.naturalWidth, cropW);
     cropH = Math.min(img.naturalHeight, cropH);
 
-    // Center crop horizontally, adjust vertically with cropCenterY
-    const x = Math.max(0, Math.min(img.naturalWidth - cropW, (img.naturalWidth - cropW) / 2));
+    // Keep the crop fully inside the source image while allowing independent X/Y positioning.
+    const targetCenterX = (cropCenterX / 100) * img.naturalWidth;
     const targetCenterY = (cropCenterY / 100) * img.naturalHeight;
+    const x = Math.max(0, Math.min(img.naturalWidth - cropW, targetCenterX - cropW / 2));
     const y = Math.max(0, Math.min(img.naturalHeight - cropH, targetCenterY - cropH / 2));
 
     return { x, y, width: cropW, height: cropH };
-  }, [img, getTargetDimensions, cropZoom, cropCenterY]);
+  }, [img, getTargetDimensions, cropZoom, cropCenterX, cropCenterY]);
 
   // Generate single photo
   const generateSinglePhoto = useCallback(async () => {
@@ -208,14 +211,90 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
     }
   };
 
-  const handlePrintSheet = () => {
-    if (!sheetPreviewUrl) return;
-    const printWindow = window.open(sheetPreviewUrl, '_blank');
-    if (printWindow) {
-      printWindow.onload = () => {
-        printWindow.print();
-      };
+  const handlePrintSheet = async () => {
+    if (!singlePhotoUrl || isRenderingPhoto || isGeneratingSheet) return;
+
+    // Open synchronously from the click so popup blockers do not silently cancel printing.
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      await handleDownloadSheetPdf();
+      return;
     }
+
+    try {
+      const tempImg = new Image();
+      tempImg.src = singlePhotoUrl;
+      await new Promise<void>((resolve, reject) => {
+        tempImg.onload = () => resolve();
+        tempImg.onerror = () => reject(new Error('Passport image could not be loaded for printing.'));
+      });
+
+      const { widthMm, heightMm } = getTargetDimensions();
+      const { canvas } = await renderPrintSheetCanvas(
+        tempImg,
+        widthMm,
+        heightMm,
+        sheetPageSize,
+        300
+      );
+      const pageWidth = sheetPageSize === 'a4' ? '210mm' : '215.9mm';
+      const pageHeight = sheetPageSize === 'a4' ? '297mm' : '279.4mm';
+      const imageUrl = canvas.toDataURL('image/jpeg', 0.98);
+
+      printWindow.document.open();
+      printWindow.document.write(`<!doctype html>
+<html><head><title>Student Hub Passport Photo Sheet</title>
+<style>
+  @page { size: ${sheetPageSize === 'a4' ? 'A4' : 'Letter'} portrait; margin: 0; }
+  html, body { margin: 0; padding: 0; width: ${pageWidth}; height: ${pageHeight}; background: #fff; }
+  img { display: block; width: ${pageWidth}; height: ${pageHeight}; object-fit: fill; }
+  @media screen { body { display: flex; justify-content: center; align-items: flex-start; } img { max-width: 100vw; height: auto; } }
+</style></head><body>
+<img id="print-sheet" src="${imageUrl}" alt="Passport photo print sheet">
+<script>
+  const sheet = document.getElementById('print-sheet');
+  sheet.onload = () => setTimeout(() => { window.focus(); window.print(); }, 400);
+  sheet.onerror = () => document.body.insertAdjacentText('beforeend', 'Unable to load print sheet. Please download the PDF instead.');
+</script>
+</body></html>`);
+      printWindow.document.close();
+    } catch (err) {
+      printWindow.close();
+      console.error('Direct passport printing failed:', err);
+      await handleDownloadSheetPdf();
+    }
+  };
+
+  const handlePreviewPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      centerX: cropCenterX,
+      centerY: cropCenterY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePreviewPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    // Dragging the visible photo moves the source image beneath the fixed crop.
+    setCropCenterX(Math.max(0, Math.min(100, drag.centerX - ((event.clientX - drag.x) / rect.width) * 100)));
+    setCropCenterY(Math.max(0, Math.min(100, drag.centerY - ((event.clientY - drag.y) / rect.height) * 100)));
+  };
+
+  const handlePreviewPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+  };
+
+  const resetFraming = () => {
+    setCropCenterX(50);
+    setCropCenterY(45);
+    setCropZoom(1.2);
   };
 
   const { widthMm, heightMm, widthPx, heightPx } = getTargetDimensions();
@@ -331,7 +410,7 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Vertical Framing (Head Position)</span>
+                  <span>Vertical Position (Up / Down)</span>
                 </label>
                 <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
                   {cropCenterY}%
@@ -354,23 +433,44 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200">Horizontal Position (Left / Right)</label>
+                <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">{cropCenterX}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={cropCenterX}
+                onChange={(e) => setCropCenterX(parseInt(e.target.value, 10))}
+                className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <Maximize2 className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Scale / Zoom In</span>
+                  <span>Zoom In / Out</span>
                 </label>
                 <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
                   {cropZoom.toFixed(1)}×
                 </span>
               </div>
-              <input
-                type="range"
-                min="1.0"
-                max="2.5"
-                step="0.05"
-                value={cropZoom}
-                onChange={(e) => setCropZoom(parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-              />
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setCropZoom((v) => Math.max(1, Number((v - 0.1).toFixed(2))))} className="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold" aria-label="Zoom out">−</button>
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.05"
+                  value={cropZoom}
+                  onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                  className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <button type="button" onClick={() => setCropZoom((v) => Math.min(3, Number((v + 0.1).toFixed(2))))} className="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold" aria-label="Zoom in">+</button>
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-500"><span>Fit</span><span>3× maximum</span></div>
+              <button type="button" onClick={resetFraming} className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Reset photo position and zoom</button>
             </div>
 
             <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
@@ -428,12 +528,19 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
                 Passport Photo Preview
               </h3>
               <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                {Math.round(widthMm)} × {Math.round(heightMm)} mm ({widthPx} × {heightPx} px @ 300 DPI)
+                {widthMm.toFixed(1)} × {heightMm.toFixed(1)} mm ({widthPx} × {heightPx} px @ {dpi} DPI)
               </span>
             </div>
 
             {/* Photo preview with optional face guide */}
-            <div className="relative w-full h-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-3 overflow-hidden">
+            <div
+              className="relative w-full h-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-3 overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+              onPointerDown={handlePreviewPointerDown}
+              onPointerMove={handlePreviewPointerMove}
+              onPointerUp={handlePreviewPointerEnd}
+              onPointerCancel={handlePreviewPointerEnd}
+              title="Drag the photo to reposition it; use the sliders for precise control"
+            >
               {singlePhotoUrl ? (
                 <div className="relative inline-block shadow-md rounded border border-slate-300 dark:border-slate-700">
                   <img
@@ -523,7 +630,7 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Fitted: <strong>{sheetTotalCount} copies</strong> arranged with fine cutting marks on a standard {sheetPageSize.toUpperCase()} page. Print at 100% scale (no scaling).
+              Fitted: <strong>{sheetTotalCount} copies</strong> arranged with cutting marks on {sheetPageSize.toUpperCase()}. In the print dialog choose <strong>Actual Size / 100%</strong>, disable Fit to Page, and select no margins if available.
             </p>
 
             <div className="grid grid-cols-2 gap-3">
@@ -538,8 +645,9 @@ export function PassportPhotoTool({ img, metadata }: PassportPhotoToolProps) {
 
               <button
                 type="button"
+                disabled={!singlePhotoBlob || isRenderingPhoto || isGeneratingSheet}
                 onClick={handlePrintSheet}
-                className="inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <Printer className="w-4 h-4 text-indigo-500" />
                 <span>Print Direct</span>
